@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: example-app
+  namespace: default
+spec:
+  serviceName: example-app
+  replicas: 2
+  selector:
+    matchLabels:
+      app: example-app
+  template:
+    metadata:
+      labels:
+        app: example-app
+    spec:
+      # Обмежуємо deployment тільки на ноди з OCFS2 storage
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                - master-node
+                - work-node
+      containers:
+      - name: app
+        image: nginx:latest
+        ports:
+        - containerPort: 80
+          name: http
+        volumeMounts:
+        - name: shared-storage
+          mountPath: /data
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "200m"
+  volumeClaimTemplates:
+  - metadata:
+      name: shared-storage
+    spec:
+      accessModes:
+        - ReadWriteMany
+      storageClassName: ocfs2-shared
+      resources:
+        requests:
+          storage: 5Gi
+      selector:
+        matchLabels:
+          storage: sharedata1  # Використовуємо sharedata1
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-app
+  namespace: default
+spec:
+  selector:
+    app: example-app
+  ports:
+  - port: 80
+    targetPort: 80
+    name: http
+  type: ClusterIP
+

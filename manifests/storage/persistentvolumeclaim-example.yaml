@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-sharedata1-example
+  namespace: default
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: ocfs2-shared
+  resources:
+    requests:
+      storage: 10Gi  # Запитуємо 10Gi з доступних 50Gi
+  selector:
+    matchLabels:
+      storage: sharedata1  # Прив'язка до конкретного PV
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-sharedata2-example
+  namespace: default
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: ocfs2-shared
+  resources:
+    requests:
+      storage: 10Gi  # Запитуємо 10Gi з доступних 50Gi
+  selector:
+    matchLabels:
+      storage: sharedata2  # Прив'язка до конкретного PV
+
