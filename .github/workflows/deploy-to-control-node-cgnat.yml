@@ -71,7 +71,7 @@ jobs:
           HostName ${{ secrets.CONTROL_NODE_LOCAL_IP }}
           User ${{ secrets.CONTROL_NODE_USER }}
           Port ${CONTROL_NODE_SSH_PORT:-22}
-          ProxyCommand ssh -W %h:%p master-node
+          ProxyJump master-node
           StrictHostKeyChecking no
           ServerAliveInterval 60
           ServerAliveCountMax 3
@@ -84,6 +84,16 @@ jobs:
       env:
         MASTER_NODE_PORT: ${{ secrets.MASTER_NODE_PORT || '22' }}
         CONTROL_NODE_SSH_PORT: ${{ secrets.CONTROL_NODE_SSH_PORT || '22' }}
+        
+    - name: Test connection to master-node
+      run: |
+        echo "Testing connection to master-node..."
+        ssh -o ConnectTimeout=10 master-node "echo '✅ Connected to master-node' && hostname"
+        
+    - name: Test connection to control-node via WireGuard
+      run: |
+        echo "Testing connection to control-node via WireGuard tunnel..."
+        ssh -o ConnectTimeout=10 control-node "echo '✅ Connected to control-node' && hostname"
         
     - name: Deploy files to control node via WireGuard tunnel
       run: |

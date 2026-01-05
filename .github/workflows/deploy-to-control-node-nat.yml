@@ -16,12 +16,46 @@ jobs:
       
     - name: Setup SSH with Jump Host
       run: |
+        set -e
+        
+        # Перевірка обов'язкових secrets
+        if [ -z "${{ secrets.JUMP_HOST }}" ]; then
+          echo "❌ Error: JUMP_HOST secret is not set"
+          exit 1
+        fi
+        if [ -z "${{ secrets.JUMP_HOST_USER }}" ]; then
+          echo "❌ Error: JUMP_HOST_USER secret is not set"
+          exit 1
+        fi
+        if [ -z "${{ secrets.CONTROL_NODE_HOST }}" ]; then
+          echo "❌ Error: CONTROL_NODE_HOST secret is not set"
+          exit 1
+        fi
+        if [ -z "${{ secrets.CONTROL_NODE_USER }}" ]; then
+          echo "❌ Error: CONTROL_NODE_USER secret is not set"
+          exit 1
+        fi
+        if [ -z "${{ secrets.SSH_PRIVATE_KEY }}" ]; then
+          echo "❌ Error: SSH_PRIVATE_KEY secret is not set"
+          exit 1
+        fi
+        if [ -z "${{ secrets.DEPLOY_PATH }}" ]; then
+          echo "❌ Error: DEPLOY_PATH secret is not set"
+          exit 1
+        fi
+        
+        echo "✅ All required secrets are set"
+        
         mkdir -p ~/.ssh
         chmod 700 ~/.ssh
         
         # SSH ключ для jump host (якщо потрібен)
         if [ -n "${{ secrets.JUMP_HOST_SSH_KEY }}" ]; then
           echo "${{ secrets.JUMP_HOST_SSH_KEY }}" > ~/.ssh/jump_host_key
+          chmod 600 ~/.ssh/jump_host_key
+        else
+          # Якщо JUMP_HOST_SSH_KEY не встановлено, використовуємо SSH_PRIVATE_KEY
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/jump_host_key
           chmod 600 ~/.ssh/jump_host_key
         fi
         
@@ -30,9 +64,7 @@ jobs:
         chmod 600 ~/.ssh/id_rsa
         
         # Додаємо known_hosts
-        if [ -n "${{ secrets.JUMP_HOST }}" ]; then
-          ssh-keyscan -H ${{ secrets.JUMP_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
-        fi
+        ssh-keyscan -H ${{ secrets.JUMP_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
         ssh-keyscan -H ${{ secrets.CONTROL_NODE_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
         
         # Створюємо SSH config для jump host
@@ -53,6 +85,8 @@ jobs:
           StrictHostKeyChecking no
         EOF
         chmod 600 ~/.ssh/config
+        
+        echo "✅ SSH config created successfully"
       env:
         JUMP_HOST_PORT: ${{ secrets.JUMP_HOST_PORT || '22' }}
         CONTROL_NODE_PORT: ${{ secrets.CONTROL_NODE_PORT || '22' }}

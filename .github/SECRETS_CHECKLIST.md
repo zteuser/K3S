@@ -63,7 +63,22 @@
 
 ### "Permission denied (publickey)"
 - **Причина:** SSH ключ неправильний або не додано на master-node
-- **Рішення:** Перевірте `MASTER_NODE_SSH_KEY` та додайте публічний ключ на master-node
+- **Рішення:** 
+  1. Перевірте `MASTER_NODE_SSH_KEY` та додайте публічний ключ на master-node
+  2. **Важливо:** Переконайтеся, що на master-node налаштовано SSH config для підключення до macmini7:
+     ```bash
+     # На master-node має бути ~/.ssh/config з:
+     Host 192.168.2.19 macmini7
+       HostName 192.168.2.19
+       User malex
+       IdentityFile ~/.ssh/id_ed25519_macmini7
+       StrictHostKeyChecking no
+     ```
+  3. Перевірте, що публічний ключ додано на macmini7:
+     ```bash
+     # На macmini7
+     cat ~/.ssh/authorized_keys | grep "master-node-to-macmini7"
+     ```
 
 ### "Connection refused"
 - **Причина:** Неправильний порт або SSH не запущений

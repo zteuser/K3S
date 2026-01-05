@@ -299,7 +299,7 @@ Host master-node
 Host control-node
   HostName 192.168.2.19
   User malex
-  ProxyCommand ssh -W %h:%p master-node
+  ProxyJump master-node
   StrictHostKeyChecking no
 ```
 
