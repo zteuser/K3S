@@ -16,6 +16,36 @@ jobs:
       
     - name: Setup SSH
       run: |
+        set -e
+        
+        # Перевірка обов'язкових secrets
+        if [ -z "${{ secrets.MASTER_NODE_PUBLIC_IP }}" ]; then
+          echo "❌ Error: MASTER_NODE_PUBLIC_IP secret is not set"
+          exit 1
+        fi
+        if [ -z "${{ secrets.MASTER_NODE_USER }}" ]; then
+          echo "❌ Error: MASTER_NODE_USER secret is not set"
+          exit 1
+        fi
+        if [ -z "${{ secrets.MASTER_NODE_SSH_KEY }}" ]; then
+          echo "❌ Error: MASTER_NODE_SSH_KEY secret is not set"
+          exit 1
+        fi
+        if [ -z "${{ secrets.CONTROL_NODE_LOCAL_IP }}" ]; then
+          echo "❌ Error: CONTROL_NODE_LOCAL_IP secret is not set"
+          exit 1
+        fi
+        if [ -z "${{ secrets.CONTROL_NODE_USER }}" ]; then
+          echo "❌ Error: CONTROL_NODE_USER secret is not set"
+          exit 1
+        fi
+        if [ -z "${{ secrets.DEPLOY_PATH }}" ]; then
+          echo "❌ Error: DEPLOY_PATH secret is not set"
+          exit 1
+        fi
+        
+        echo "✅ All required secrets are set"
+        
         mkdir -p ~/.ssh
         chmod 700 ~/.ssh
         
@@ -47,6 +77,10 @@ jobs:
           ServerAliveCountMax 3
         EOF
         chmod 600 ~/.ssh/config
+        
+        echo "✅ SSH config created successfully"
+        echo "Master Node: ${{ secrets.MASTER_NODE_USER }}@${{ secrets.MASTER_NODE_PUBLIC_IP }}"
+        echo "Control Node: ${{ secrets.CONTROL_NODE_USER }}@${{ secrets.CONTROL_NODE_LOCAL_IP }}"
       env:
         MASTER_NODE_PORT: ${{ secrets.MASTER_NODE_PORT || '22' }}
         CONTROL_NODE_SSH_PORT: ${{ secrets.CONTROL_NODE_SSH_PORT || '22' }}
