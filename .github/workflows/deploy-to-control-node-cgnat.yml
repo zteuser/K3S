@@ -96,15 +96,15 @@ jobs:
       run: |
         echo "Testing connection to control-node via WireGuard tunnel..."
         # Виконуємо SSH команду через master-node
-        # Використовуємо hostname 'macmini7' з SSH config на master-node, або IP якщо config не працює
-        ssh master-node "ssh -o ConnectTimeout=10 -F ~/.ssh/config macmini7 'echo ✅ Connected to control-node && hostname' || \
+        # SSH автоматично використовує ~/.ssh/config, тому не потрібно вказувати -F
+        ssh master-node "ssh -o ConnectTimeout=10 macmini7 'echo ✅ Connected to control-node && hostname' || \
           ssh -o ConnectTimeout=10 ${{ secrets.CONTROL_NODE_USER }}@${{ secrets.CONTROL_NODE_LOCAL_IP }} 'echo ✅ Connected to control-node && hostname'"
         
     - name: Deploy files to control node via WireGuard tunnel
       run: |
         # Створюємо директорію на control node через master-node
-        # Спробуємо використати hostname з SSH config, якщо не працює - використаємо IP
-        ssh master-node "ssh -F ~/.ssh/config macmini7 'mkdir -p ${{ secrets.DEPLOY_PATH }}' || \
+        # SSH автоматично використовує ~/.ssh/config на master-node
+        ssh master-node "ssh macmini7 'mkdir -p ${{ secrets.DEPLOY_PATH }}' || \
           ssh ${{ secrets.CONTROL_NODE_USER }}@${{ secrets.CONTROL_NODE_LOCAL_IP }} 'mkdir -p ${{ secrets.DEPLOY_PATH }}'"
         
         # Копіюємо файли: спочатку на master-node, потім на macmini7
@@ -123,15 +123,20 @@ jobs:
           master-node:$TEMP_DIR/
         
         # Копіюємо файли з master-node на macmini7 через WireGuard
-        # Використовуємо hostname 'macmini7' з SSH config на master-node
+        # Використовуємо hostname 'macmini7' з SSH config - SSH автоматично використає ~/.ssh/config
+        # Якщо це не працює, використовуємо абсолютний шлях до config як fallback
         ssh master-node "rsync -avz --delete \
-          -e 'ssh -F ~/.ssh/config' \
+          $TEMP_DIR/ \
+          macmini7:${{ secrets.DEPLOY_PATH }}/ && \
+          rm -rf $TEMP_DIR" || \
+        ssh master-node "rsync -avz --delete \
+          -e 'ssh -F /home/ubuntu/.ssh/config' \
           $TEMP_DIR/ \
           macmini7:${{ secrets.DEPLOY_PATH }}/ && \
           rm -rf $TEMP_DIR"
         
     - name: Verify deployment
       run: |
-        ssh master-node "ssh -F ~/.ssh/config macmini7 'ls -la ${{ secrets.DEPLOY_PATH }} && echo Deployment successful!' || \
+        ssh master-node "ssh macmini7 'ls -la ${{ secrets.DEPLOY_PATH }} && echo Deployment successful!' || \
           ssh ${{ secrets.CONTROL_NODE_USER }}@${{ secrets.CONTROL_NODE_LOCAL_IP }} 'ls -la ${{ secrets.DEPLOY_PATH }} && echo Deployment successful!'"
 
