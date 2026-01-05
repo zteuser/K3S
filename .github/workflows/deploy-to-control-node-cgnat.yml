@@ -123,12 +123,7 @@ jobs:
           master-node:$TEMP_DIR/
         
         # Копіюємо файли з master-node на macmini7 через WireGuard
-        # Використовуємо hostname 'macmini7' з SSH config - SSH автоматично використає ~/.ssh/config
-        # Якщо це не працює, використовуємо абсолютний шлях до config як fallback
-        ssh master-node "rsync -avz --delete \
-          $TEMP_DIR/ \
-          macmini7:${{ secrets.DEPLOY_PATH }}/ && \
-          rm -rf $TEMP_DIR" || \
+        # Використовуємо абсолютний шлях до SSH config, оскільки ~ не розширюється в контексті SSH команди
         ssh master-node "rsync -avz --delete \
           -e 'ssh -F /home/ubuntu/.ssh/config' \
           $TEMP_DIR/ \
