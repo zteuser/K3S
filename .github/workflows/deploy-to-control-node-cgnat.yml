@@ -1,0 +1,72 @@
+name: Deploy to Control Node (via Master Node and WireGuard)
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup SSH
+      run: |
+        mkdir -p ~/.ssh
+        chmod 700 ~/.ssh
+        
+        # SSH ключ для підключення до master-node (jump server)
+        echo "${{ secrets.MASTER_NODE_SSH_KEY }}" > ~/.ssh/master_node_key
+        chmod 600 ~/.ssh/master_node_key
+        
+        # Додаємо known_hosts
+        ssh-keyscan -H ${{ secrets.MASTER_NODE_PUBLIC_IP }} >> ~/.ssh/known_hosts 2>/dev/null || true
+        
+        # Створюємо SSH config для підключення через master-node до macmini7 через WireGuard
+        cat > ~/.ssh/config << EOF
+        Host master-node
+          HostName ${{ secrets.MASTER_NODE_PUBLIC_IP }}
+          User ${{ secrets.MASTER_NODE_USER }}
+          Port ${MASTER_NODE_PORT:-22}
+          IdentityFile ~/.ssh/master_node_key
+          StrictHostKeyChecking no
+          ServerAliveInterval 60
+          ServerAliveCountMax 3
+          
+        Host control-node
+          HostName ${{ secrets.CONTROL_NODE_LOCAL_IP }}
+          User ${{ secrets.CONTROL_NODE_USER }}
+          Port ${CONTROL_NODE_SSH_PORT:-22}
+          ProxyCommand ssh -W %h:%p master-node
+          StrictHostKeyChecking no
+          ServerAliveInterval 60
+          ServerAliveCountMax 3
+        EOF
+        chmod 600 ~/.ssh/config
+      env:
+        MASTER_NODE_PORT: ${{ secrets.MASTER_NODE_PORT || '22' }}
+        CONTROL_NODE_SSH_PORT: ${{ secrets.CONTROL_NODE_SSH_PORT || '22' }}
+        
+    - name: Deploy files to control node via WireGuard tunnel
+      run: |
+        # Створюємо директорію на control node
+        ssh control-node "mkdir -p ${{ secrets.DEPLOY_PATH }}"
+        
+        # Копіюємо файли через rsync через master-node та WireGuard tunnel
+        rsync -avz --delete \
+          -e "ssh -F ~/.ssh/config" \
+          --exclude='.git' \
+          --exclude='.cursor' \
+          --exclude='*.local' \
+          --exclude='.github' \
+          ./ \
+          control-node:${{ secrets.DEPLOY_PATH }}/
+        
+    - name: Verify deployment
+      run: |
+        ssh control-node "ls -la ${{ secrets.DEPLOY_PATH }} && echo 'Deployment successful!'"
+

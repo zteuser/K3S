@@ -1,0 +1,78 @@
+name: Deploy to Control Node (NAT with Jump Host)
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup SSH with Jump Host
+      run: |
+        mkdir -p ~/.ssh
+        chmod 700 ~/.ssh
+        
+        # SSH ключ для jump host (якщо потрібен)
+        if [ -n "${{ secrets.JUMP_HOST_SSH_KEY }}" ]; then
+          echo "${{ secrets.JUMP_HOST_SSH_KEY }}" > ~/.ssh/jump_host_key
+          chmod 600 ~/.ssh/jump_host_key
+        fi
+        
+        # SSH ключ для control node
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        
+        # Додаємо known_hosts
+        if [ -n "${{ secrets.JUMP_HOST }}" ]; then
+          ssh-keyscan -H ${{ secrets.JUMP_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
+        fi
+        ssh-keyscan -H ${{ secrets.CONTROL_NODE_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
+        
+        # Створюємо SSH config для jump host
+        cat > ~/.ssh/config << EOF
+        Host jump-host
+          HostName ${{ secrets.JUMP_HOST }}
+          User ${{ secrets.JUMP_HOST_USER }}
+          Port ${JUMP_HOST_PORT:-22}
+          IdentityFile ~/.ssh/jump_host_key
+          StrictHostKeyChecking no
+          
+        Host control-node
+          HostName ${{ secrets.CONTROL_NODE_HOST }}
+          User ${{ secrets.CONTROL_NODE_USER }}
+          Port ${CONTROL_NODE_PORT:-22}
+          IdentityFile ~/.ssh/id_rsa
+          ProxyJump jump-host
+          StrictHostKeyChecking no
+        EOF
+        chmod 600 ~/.ssh/config
+      env:
+        JUMP_HOST_PORT: ${{ secrets.JUMP_HOST_PORT || '22' }}
+        CONTROL_NODE_PORT: ${{ secrets.CONTROL_NODE_PORT || '22' }}
+        
+    - name: Deploy files to control node via jump host
+      run: |
+        # Створюємо директорію на control node
+        ssh control-node "mkdir -p ${{ secrets.DEPLOY_PATH }}"
+        
+        # Копіюємо файли через rsync з використанням jump host
+        rsync -avz --delete \
+          -e "ssh -F ~/.ssh/config" \
+          --exclude='.git' \
+          --exclude='.cursor' \
+          --exclude='*.local' \
+          --exclude='.github' \
+          ./ \
+          control-node:${{ secrets.DEPLOY_PATH }}/
+        
+    - name: Verify deployment
+      run: |
+        ssh control-node "ls -la ${{ secrets.DEPLOY_PATH }} && echo 'Deployment successful!'"
+

@@ -1,0 +1,57 @@
+name: Deploy to Control Node
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:  # Дозволяє запускати вручну
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup SSH
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        # Для port forwarding використовуємо публічний IP роутера
+        ssh-keyscan -H ${{ secrets.ROUTER_PUBLIC_IP }} -p ${CONTROL_NODE_PORT:-22222} >> ~/.ssh/known_hosts 2>/dev/null || true
+      env:
+        CONTROL_NODE_PORT: ${{ secrets.CONTROL_NODE_PORT || '22222' }}
+        
+    - name: Deploy files to control node
+      run: |
+        # Створюємо директорію на control node якщо не існує
+        ssh -i ~/.ssh/id_rsa \
+          -o StrictHostKeyChecking=no \
+          -p ${CONTROL_NODE_PORT:-22222} \
+          ${{ secrets.CONTROL_NODE_USER }}@${{ secrets.ROUTER_PUBLIC_IP }} \
+          "mkdir -p ${{ secrets.DEPLOY_PATH }}"
+        
+        # Копіюємо файли через rsync (більш ефективно)
+        rsync -avz --delete \
+          -e "ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -p ${CONTROL_NODE_PORT:-22222}" \
+          --exclude='.git' \
+          --exclude='.cursor' \
+          --exclude='*.local' \
+          --exclude='.github' \
+          ./ \
+          ${{ secrets.CONTROL_NODE_USER }}@${{ secrets.ROUTER_PUBLIC_IP }}:${{ secrets.DEPLOY_PATH }}/
+      env:
+        CONTROL_NODE_PORT: ${{ secrets.CONTROL_NODE_PORT || '22222' }}
+        
+    - name: Verify deployment
+      run: |
+        ssh -i ~/.ssh/id_rsa \
+          -o StrictHostKeyChecking=no \
+          -p ${CONTROL_NODE_PORT:-22222} \
+          ${{ secrets.CONTROL_NODE_USER }}@${{ secrets.ROUTER_PUBLIC_IP }} \
+          "ls -la ${{ secrets.DEPLOY_PATH }} && echo 'Deployment successful!'"
+      env:
+        CONTROL_NODE_PORT: ${{ secrets.CONTROL_NODE_PORT || '22222' }}
+

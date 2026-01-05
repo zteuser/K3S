@@ -1,0 +1,38 @@
+{
+  "port_forwarding_rules": [
+    {
+      "name": "SSH-macmini7-GitHub-Actions",
+      "description": "Port forwarding для SSH доступу до macmini7 з GitHub Actions",
+      "enabled": true,
+      "interface": "wan",
+      "protocol": "tcp",
+      "external_port": 22222,
+      "internal_ip": "192.168.1.100",
+      "internal_port": 22,
+      "notes": "Замініть 192.168.1.100 на реальну IP адресу macmini7"
+    }
+  ],
+  "firewall_rules": [
+    {
+      "name": "Allow-SSH-GitHub-Actions",
+      "description": "Дозволити SSH з GitHub Actions IP ranges",
+      "action": "accept",
+      "protocol": "tcp",
+      "port": 22222,
+      "source": "github_actions_ip_ranges",
+      "notes": "GitHub Actions IP ranges: https://api.github.com/meta"
+    }
+  ],
+  "configuration_notes": {
+    "ucg_ultra_version": "1.0+",
+    "setup_method": "UniFi Controller Web UI або SSH CLI",
+    "verification": "ssh -p 22222 user@<public-ip>",
+    "security_recommendations": [
+      "Використовуйте SSH ключі замість паролів",
+      "Обмежте доступ по IP (якщо можливо)",
+      "Вимкніть password authentication на macmini7",
+      "Регулярно оновлюйте SSH та систему"
+    ]
+  }
+}
+
