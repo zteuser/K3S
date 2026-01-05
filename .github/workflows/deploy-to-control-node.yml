@@ -1,10 +1,8 @@
 name: Deploy to Control Node
 
 on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:  # Дозволяє запускати вручну
+  # Використовуйте deploy-to-control-node-cgnat.yml для CGNAT
+  workflow_dispatch:  # Тільки ручний запуск
 
 jobs:
   deploy:

@@ -65,19 +65,44 @@
 - **Причина:** SSH ключ неправильний або не додано на master-node
 - **Рішення:** 
   1. Перевірте `MASTER_NODE_SSH_KEY` та додайте публічний ключ на master-node
-  2. **Важливо:** Переконайтеся, що на master-node налаштовано SSH config для підключення до macmini7:
+  2. **КРИТИЧНО ВАЖЛИВО:** На master-node має бути налаштовано SSH config для підключення до macmini7:
      ```bash
-     # На master-node має бути ~/.ssh/config з:
+     # На master-node перевірте:
+     cat ~/.ssh/config | grep -A 5 "192.168.2.19"
+     
+     # Має бути:
      Host 192.168.2.19 macmini7
        HostName 192.168.2.19
        User malex
        IdentityFile ~/.ssh/id_ed25519_macmini7
        StrictHostKeyChecking no
+       ServerAliveInterval 60
+       ServerAliveCountMax 3
      ```
-  3. Перевірте, що публічний ключ додано на macmini7:
+  3. Якщо SSH config відсутній, додайте його:
+     ```bash
+     # На master-node
+     cat >> ~/.ssh/config << EOF
+     Host 192.168.2.19 macmini7
+       HostName 192.168.2.19
+       User malex
+       IdentityFile ~/.ssh/id_ed25519_macmini7
+       StrictHostKeyChecking no
+       ServerAliveInterval 60
+       ServerAliveCountMax 3
+     EOF
+     chmod 600 ~/.ssh/config
+     ```
+  4. Перевірте, що публічний ключ додано на macmini7:
      ```bash
      # На macmini7
      cat ~/.ssh/authorized_keys | grep "master-node-to-macmini7"
+     ```
+  5. Перевірте безпарольне підключення з master-node:
+     ```bash
+     # На master-node
+     ssh 192.168.2.19
+     # Має підключитися без запиту пароля
      ```
 
 ### "Connection refused"
