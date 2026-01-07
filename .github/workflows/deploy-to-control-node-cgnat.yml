@@ -123,11 +123,18 @@ jobs:
           master-node:$TEMP_DIR/
         
         # Копіюємо файли з master-node на macmini7 через WireGuard
-        # Встановлюємо HOME та використовуємо абсолютний шлях до SSH config
-        ssh master-node "HOME=/home/ubuntu rsync -avz --delete \
-          -e '/usr/bin/ssh -F /home/ubuntu/.ssh/config' \
+        # Використовуємо SSH опції безпосередньо, не залежачи від config файлу
+        # SSH ключ знаходиться на master-node: ~/.ssh/id_ed25519_macmini7
+        # Спочатку пробуємо з hostname macmini7 (якщо config працює), потім з IP адресою
+        ssh master-node "rsync -avz --delete \
+          -e 'ssh -i /home/ubuntu/.ssh/id_ed25519_macmini7 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ServerAliveInterval=60 -o ServerAliveCountMax=3' \
           $TEMP_DIR/ \
           macmini7:${{ secrets.DEPLOY_PATH }}/ && \
+          rm -rf $TEMP_DIR" || \
+        ssh master-node "rsync -avz --delete \
+          -e 'ssh -i /home/ubuntu/.ssh/id_ed25519_macmini7 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ServerAliveInterval=60 -o ServerAliveCountMax=3' \
+          $TEMP_DIR/ \
+          ${{ secrets.CONTROL_NODE_USER }}@${{ secrets.CONTROL_NODE_LOCAL_IP }}:${{ secrets.DEPLOY_PATH }}/ && \
           rm -rf $TEMP_DIR"
         
     - name: Verify deployment
