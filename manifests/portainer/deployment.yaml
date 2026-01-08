@@ -16,6 +16,7 @@ spec:
         app: portainer
     spec:
       serviceAccountName: portainer
+      dnsPolicy: ClusterFirst
       # Обмежуємо deployment на ноди з OCFS2 storage
       affinity:
         nodeAffinity:
