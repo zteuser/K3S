@@ -42,10 +42,6 @@ spec:
         env:
         - name: KUBERNETES_ENABLED
           value: "true"
-        - name: KUBERNETES_SERVICE_HOST
-          value: "kubernetes.default.svc.cluster.local"
-        - name: KUBERNETES_SERVICE_PORT
-          value: "443"
         volumeMounts:
         - name: portainer-data
           mountPath: /data
