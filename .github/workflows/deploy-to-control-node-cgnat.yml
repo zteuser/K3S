@@ -109,15 +109,10 @@ jobs:
         TEMP_DIR="/tmp/k3s-deploy-$$"
         ssh master-node "mkdir -p $TEMP_DIR"
         
-        # Копіюємо файли на master-node
-        rsync -avz --delete \
-          -e "ssh -F ~/.ssh/config" \
-          --exclude='.git' \
-          --exclude='.cursor' \
-          --exclude='*.local' \
-          --exclude='.github' \
-          ./ \
-          master-node:$TEMP_DIR/
+        # Копіюємо файли на master-node використовуючи tar через SSH pipe
+        # Це обійде проблему з SSH config файлом
+        tar czf - --exclude='.git' --exclude='.cursor' --exclude='*.local' --exclude='.github' . | \
+          ssh master-node "cd $TEMP_DIR && tar xzf -"
         
         # Копіюємо файли з master-node на macmini7 через WireGuard
         # Використовуємо tar через SSH pipe замість rsync, щоб обійти проблему з config файлом
