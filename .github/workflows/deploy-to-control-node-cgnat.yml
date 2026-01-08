@@ -120,16 +120,31 @@ jobs:
           master-node:$TEMP_DIR/
         
         # Копіюємо файли з master-node на macmini7 через WireGuard
+        # Використовуємо tar через SSH pipe замість rsync, щоб обійти проблему з config файлом
         # Спочатку перевіряємо, що SSH ключ існує та має правильні права
         ssh master-node "test -f /home/ubuntu/.ssh/id_ed25519_macmini7 && chmod 600 /home/ubuntu/.ssh/id_ed25519_macmini7 && echo '✅ SSH key found and permissions set' || echo '❌ SSH key not found'"
         
-        # Використовуємо SSH опції безпосередньо, не залежачи від config файлу
-        # Встановлюємо HOME та використовуємо абсолютний шлях до ssh
-        # Використовуємо змінну середовища SSH_CONFIG_FILE для вимкнення config файлу
-        ssh master-node "HOME=/home/ubuntu SSH_CONFIG_FILE=/dev/null rsync -avz --delete \
-          -e '/usr/bin/ssh -F /dev/null -i /home/ubuntu/.ssh/id_ed25519_macmini7 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ServerAliveInterval=60 -o ServerAliveCountMax=3' \
-          $TEMP_DIR/ \
-          ${{ secrets.CONTROL_NODE_USER }}@${{ secrets.CONTROL_NODE_LOCAL_IP }}:${{ secrets.DEPLOY_PATH }}/ && \
+        # Очищаємо старий вміст на macmini7 (аналог rsync --delete)
+        ssh master-node "/usr/bin/ssh -F /dev/null \
+          -i /home/ubuntu/.ssh/id_ed25519_macmini7 \
+          -o StrictHostKeyChecking=no \
+          -o UserKnownHostsFile=/dev/null \
+          -o ServerAliveInterval=60 \
+          -o ServerAliveCountMax=3 \
+          ${{ secrets.CONTROL_NODE_USER }}@${{ secrets.CONTROL_NODE_LOCAL_IP }} \
+          'rm -rf ${{ secrets.DEPLOY_PATH }}/* ${{ secrets.DEPLOY_PATH }}/.[!.]* ${{ secrets.DEPLOY_PATH }}/..?* 2>/dev/null || true'"
+        
+        # Використовуємо tar через SSH pipe - це повністю обійде проблему з SSH config файлом
+        # Створюємо tar архів на master-node та передаємо його через SSH pipe на macmini7
+        ssh master-node "cd $TEMP_DIR && tar czf - . | \
+          /usr/bin/ssh -F /dev/null \
+            -i /home/ubuntu/.ssh/id_ed25519_macmini7 \
+            -o StrictHostKeyChecking=no \
+            -o UserKnownHostsFile=/dev/null \
+            -o ServerAliveInterval=60 \
+            -o ServerAliveCountMax=3 \
+          ${{ secrets.CONTROL_NODE_USER }}@${{ secrets.CONTROL_NODE_LOCAL_IP }} \
+          'cd ${{ secrets.DEPLOY_PATH }} && tar xzf - && echo Deployment successful!' && \
           rm -rf $TEMP_DIR"
         
     - name: Verify deployment
