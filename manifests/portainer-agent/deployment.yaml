@@ -37,10 +37,6 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: status.podIP
-        - name: AGENT_CLUSTER_ADDR
-          value: "0.0.0.0:9001"
-        - name: AGENT_SECRET
-          value: ""
         ports:
         - containerPort: 9001
           name: http
