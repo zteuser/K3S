@@ -9,7 +9,7 @@ spec:
   storageClassName: ocfs2-shared
   resources:
     requests:
-      storage: 10Gi  # Запитуємо 10Gi з доступних 50Gi
+      storage: 45Gi  # Використовуємо 45Gi з доступних 50Gi (5Gi залишаємо для системи)
   selector:
     matchLabels:
       storage: sharedata1  # Прив'язка до конкретного PV
@@ -26,7 +26,7 @@ spec:
   storageClassName: ocfs2-shared
   resources:
     requests:
-      storage: 10Gi  # Запитуємо 10Gi з доступних 50Gi
+      storage: 45Gi  # Використовуємо 45Gi з доступних 50Gi (5Gi залишаємо для системи)
   selector:
     matchLabels:
       storage: sharedata2  # Прив'язка до конкретного PV

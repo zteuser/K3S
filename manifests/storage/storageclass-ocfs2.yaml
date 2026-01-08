@@ -6,7 +6,7 @@ metadata:
     storageclass.kubernetes.io/is-default-class: "false"
 provisioner: kubernetes.io/no-provisioner
 volumeBindingMode: WaitForFirstConsumer
-allowVolumeExpansion: false
+allowVolumeExpansion: true
 parameters:
   type: ocfs2
   description: "OCFS2 shared storage for nodes (master-node, work-node)"
