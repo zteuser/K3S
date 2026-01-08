@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: portainer-data
+  namespace: portainer
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: ocfs2-shared
+  resources:
+    requests:
+      storage: 1Gi
+  selector:
+    matchLabels:
+      storage: sharedata1
