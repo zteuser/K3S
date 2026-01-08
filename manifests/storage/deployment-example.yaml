@@ -43,7 +43,7 @@ spec:
       volumes:
       - name: shared-data
         persistentVolumeClaim:
-          claimName: pvc-sharedata1-example  # Використовуємо PVC з sharedata1
+          claimName: pvc-sharedata1  # Використовуємо PVC з sharedata1
 
 ---
 apiVersion: v1

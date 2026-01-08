@@ -156,7 +156,7 @@ spec:
       volumes:
       - name: shared-data
         persistentVolumeClaim:
-          claimName: pvc-sharedata1-example
+          claimName: pvc-sharedata1
 ```
 
 ## Важливі зауваження

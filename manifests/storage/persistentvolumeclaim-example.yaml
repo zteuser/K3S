@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: pvc-sharedata1-example
+  name: pvc-sharedata1
   namespace: default
 spec:
   accessModes:
@@ -18,7 +18,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: pvc-sharedata2-example
+  name: pvc-sharedata2
   namespace: default
 spec:
   accessModes:
