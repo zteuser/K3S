@@ -54,7 +54,27 @@ echo ""
 
 # Видалення PV
 echo "3. Видалення існуючих PV..."
-kubectl delete pv pv-sharedata1 pv-sharedata2 --ignore-not-found=true
+echo "   Перевірка статусу PV перед видаленням..."
+kubectl get pv pv-sharedata1 pv-sharedata2 2>/dev/null || echo "   PV вже видалено або не існують"
+echo ""
+echo "   Видалення PV (може зайняти час через Retain policy)..."
+kubectl delete pv pv-sharedata1 pv-sharedata2 --ignore-not-found=true --wait=false
+echo "   Очікування завершення видалення..."
+sleep 3
+# Перевірка чи PV видалені
+RETRY_COUNT=0
+while kubectl get pv pv-sharedata1 pv-sharedata2 2>/dev/null | grep -q sharedata; do
+    if [ $RETRY_COUNT -ge 10 ]; then
+        echo "⚠️  PV не видаляються автоматично, спробуємо примусово..."
+        kubectl patch pv pv-sharedata1 -p '{"metadata":{"finalizers":null}}' 2>/dev/null || true
+        kubectl patch pv pv-sharedata2 -p '{"metadata":{"finalizers":null}}' 2>/dev/null || true
+        kubectl delete pv pv-sharedata1 pv-sharedata2 --ignore-not-found=true --force --grace-period=0 2>/dev/null || true
+        break
+    fi
+    echo "   Очікування... ($RETRY_COUNT/10)"
+    sleep 2
+    RETRY_COUNT=$((RETRY_COUNT+1))
+done
 echo "✅ PV видалено"
 echo ""
 
