@@ -33,6 +33,10 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: spec.nodeName
+        - name: KUBERNETES_POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
         - name: AGENT_CLUSTER_ADDR
           value: "0.0.0.0:9001"
         - name: AGENT_SECRET
