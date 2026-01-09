@@ -88,6 +88,17 @@ kubectl get svc portainer-agent -n portainer -o jsonpath='{.spec.ports[0].nodePo
 
 ## Troubleshooting
 
+### "Invalid request signature" (403) в логах Agent
+
+Якщо в логах Agent видно помилки `Invalid request signature` з кодом 403, це означає, що Portainer UI і Agent не синхронізовані з автентифікації.
+
+**Рішення:**
+1. Видаліть environment в Portainer UI
+2. Перезапустіть Portainer Pod: `kubectl rollout restart deployment/portainer -n portainer`
+3. Створіть новий environment - це згенерує новий секрет для автентифікації
+
+Детальні інструкції: `fix-authentication-issue.md`
+
 ### Pod в статусі CrashLoopBackOff
 
 ```bash
