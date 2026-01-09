@@ -9,7 +9,10 @@ echo ""
 
 # 1. Перевірка поточного ClusterRole
 echo "1. Перевірка поточного ClusterRole..."
+echo "   Перевірка authorization.k8s.io..."
 kubectl get clusterrole portainer -o yaml | grep -A 5 "authorization.k8s.io" || echo "   ⚠️  API group authorization.k8s.io не знайдено"
+echo "   Перевірка autoscaling..."
+kubectl get clusterrole portainer -o yaml | grep -A 5 "autoscaling" || echo "   ⚠️  API group autoscaling не знайдено"
 echo ""
 
 # 2. Застосування оновленого ClusterRole
@@ -21,6 +24,7 @@ echo ""
 # 3. Перевірка, що права додані
 echo "3. Перевірка оновленого ClusterRole..."
 kubectl get clusterrole portainer -o yaml | grep -A 5 "authorization.k8s.io" && echo "   ✅ API group authorization.k8s.io знайдено" || echo "   ⚠️  API group authorization.k8s.io не знайдено"
+kubectl get clusterrole portainer -o yaml | grep -A 5 "autoscaling" && echo "   ✅ API group autoscaling знайдено" || echo "   ⚠️  API group autoscaling не знайдено"
 echo ""
 
 # 4. Перезапуск Portainer Pod
@@ -38,11 +42,17 @@ echo ""
 
 # 6. Перевірка прав
 echo "6. Перевірка прав ServiceAccount..."
+echo "   Перевірка localsubjectaccessreviews..."
 if kubectl auth can-i create localsubjectaccessreviews --as=system:serviceaccount:portainer:portainer -n default 2>/dev/null; then
     echo "   ✅ ServiceAccount має права на створення localsubjectaccessreviews"
 else
     echo "   ⚠️  ServiceAccount не має прав на створення localsubjectaccessreviews"
-    echo "   Перевірте ClusterRole вручну: kubectl get clusterrole portainer -o yaml"
+fi
+echo "   Перевірка horizontalpodautoscalers..."
+if kubectl auth can-i list horizontalpodautoscalers --as=system:serviceaccount:portainer:portainer --all-namespaces 2>/dev/null; then
+    echo "   ✅ ServiceAccount має права на перелік horizontalpodautoscalers"
+else
+    echo "   ⚠️  ServiceAccount не має прав на перелік horizontalpodautoscalers"
 fi
 echo ""
 
