@@ -26,7 +26,9 @@ Environment налаштований на неправильну адресу а
    ```
    (замініть 30778 на поточний NodePort, якщо він інший)
 
-6. **Натисніть "Update environment"** або "Save"
+6. **Увімкніть "TLS"** або "Skip TLS verification" (якщо є така опція), оскільки Agent працює на HTTPS з самопідписаним сертифікатом
+
+7. **Натисніть "Update environment"** або "Save"
 
 ### Варіант 2: Видалення та створення нового environment
 
@@ -43,6 +45,7 @@ Environment налаштований на неправильну адресу а
    - Введіть:
      - **Name**: `k3s-cluster` (або будь-яка назва)
      - **Environment address**: `192.168.2.19:30778`
+   - **Увімкніть "TLS"** або "Skip TLS verification" (якщо є така опція)
    - Натисніть "Connect"
 
 ## Перевірка поточного NodePort
@@ -62,20 +65,24 @@ sudo kubectl get svc portainer-agent -n portainer
 
 ## Перевірка доступності Agent
 
+**Важливо:** Agent працює на **HTTPS**, а не HTTP!
+
 Перевірте, що Agent доступний з IP адреси, яку ви використовуєте:
 
 ```bash
-# З macmini7
-curl -v http://192.168.2.19:30778/ping
+# З macmini7 (використовуйте -k для пропуску перевірки сертифіката)
+curl -k -v https://192.168.2.19:30778/ping
 
 # Або з master-node
-curl -v http://10.0.10.10:30778/ping
+curl -k -v https://10.0.10.10:30778/ping
 
 # Або з work-node
-curl -v http://10.0.10.20:30778/ping
+curl -k -v https://10.0.10.20:30778/ping
 ```
 
 Очікувана відповідь: `{"status":"ok"}` або подібна.
+
+**Примітка:** Використовуйте `-k` (або `--insecure`) для пропуску перевірки TLS сертифіката, оскільки Agent використовує самопідписаний сертифікат.
 
 ## Troubleshooting
 

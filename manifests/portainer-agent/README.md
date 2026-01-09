@@ -45,17 +45,23 @@ kubectl apply -f https://downloads.portainer.io/ce2-33/portainer-agent-k8s-lb.ya
 
 ## Підключення в Portainer UI
 
+**Важливо:** Agent працює на **HTTPS**, тому при підключенні через Portainer UI може знадобитися увімкнути "TLS" або "Skip TLS verification".
+
 ### Додавання нового environment
 
 1. Відкрийте Portainer UI
 2. Перейдіть до "Add environment" → "Kubernetes" → "Agent"
 3. Введіть:
    - **Name**: `k3s-cluster` (або будь-яка назва)
-   - **Environment address**: `<node-ip>:<nodeport>`
-     - Для macmini7 (control node): `192.168.2.19:30778`
-     - Для master-node: `10.0.10.10:30778`
-     - Для work-node: `10.0.10.20:30778`
+   - **Environment address**: 
+     - **Рекомендовано (Service DNS):** `portainer-agent.portainer.svc.cluster.local:9001`
+     - **Або IP адреса ноди:**
+       - Для macmini7 (control node): `192.168.2.19:30778`
+       - Для master-node: `10.0.10.10:30778`
+       - Для work-node: `10.0.10.20:30778`
 4. Натисніть "Connect"
+
+**Примітка:** Portainer UI автоматично визначає HTTPS для Agent, тому окремі налаштування TLS не потрібні.
 
 ### Оновлення існуючого environment
 
@@ -66,10 +72,14 @@ kubectl apply -f https://downloads.portainer.io/ce2-33/portainer-agent-k8s-lb.ya
 3. Натисніть на іконку редагування (олівець) або на назву environment
 4. Перейдіть до вкладки "Settings" або "Connection"
 5. Оновіть **Environment address** на правильну адресу:
-   - `192.168.2.19:30778` (для macmini7)
-   - Або `10.0.10.10:30778` (для master-node)
-   - Або `10.0.10.20:30778` (для work-node)
+   - **Рекомендовано (Service DNS):** `portainer-agent.portainer.svc.cluster.local:9001`
+   - **Або IP адреса ноди:**
+     - `192.168.2.19:30778` (для macmini7)
+     - `10.0.10.10:30778` (для master-node)
+     - `10.0.10.20:30778` (для work-node)
 6. Натисніть "Update environment" або "Save"
+
+**Примітка:** Portainer UI автоматично визначає HTTPS для Agent, тому окремі налаштування TLS не потрібні.
 
 **Примітка:** NodePort може змінитися після перестворення Service. Перевірте поточний NodePort:
 ```bash
