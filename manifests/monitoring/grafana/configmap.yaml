@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-config
+  namespace: monitoring
+  labels:
+    app: grafana
+data:
+  grafana.ini: |
+    [paths]
+    data = /var/lib/grafana
+    logs = /var/log/grafana
+    plugins = /var/lib/grafana/plugins
+    provisioning = /etc/grafana/provisioning
+
+    [server]
+    http_port = 3000
+    root_url = %(protocol)s://%(domain)s:%(http_port)s/
+
+    [database]
+    type = sqlite3
+    path = grafana.db
+
+    [session]
+    provider = file
+
+    [analytics]
+    reporting_enabled = false
+    check_for_updates = false
+
+    [log]
+    mode = console
+    level = info
+
+    [log.console]
+    level = info
+
+    [auth]
+    disable_login_form = false
+
+    [auth.anonymous]
+    enabled = false
+
+    [datasources]
+    default = Prometheus
+
+    [users]
+    allow_sign_up = false
