@@ -10,7 +10,7 @@ metadata:
     storage: grafana
 spec:
   capacity:
-    storage: 48Gi
+    storage: 10Gi
   accessModes:
     - ReadWriteMany  # OCFS2 підтримує одночасний доступ з кількох нод
   persistentVolumeReclaimPolicy: Retain

@@ -20,7 +20,7 @@ spec:
     - ReadWriteMany  # OCFS2 підтримує ReadWriteMany (RWX) - має співпадати з PV
   resources:
     requests:
-      storage: 48Gi  # Розмір для Grafana
+      storage: 10Gi  # Розмір для Grafana
   storageClassName: ocfs2-shared  # Використовуємо той самий storage class що і існуючі volumes
   # Якщо потрібно використати новий PV pv-grafana-data, розкоментуйте:
   # volumeName: pv-grafana-data
