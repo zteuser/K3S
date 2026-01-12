@@ -1,3 +1,6 @@
+# Альтернативний варіант deployment з root правами для initContainer
+# Використовуйте цей варіант, якщо initContainer не може запуститися через Pod Security Policy
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -23,23 +26,6 @@ spec:
         runAsNonRoot: true
         seccompProfile:
           type: RuntimeDefault
-      # Init container для встановлення правильних прав на директорію
-      initContainers:
-      - name: fix-grafana-permissions
-        image: busybox:1.36
-        command: ['sh', '-c']
-        args:
-          - |
-            # Встановлюємо права на директорію для користувача 472 (grafana)
-            chown -R 472:472 /var/lib/grafana || true
-            chmod -R 755 /var/lib/grafana || true
-        securityContext:
-          runAsUser: 0  # root для зміни прав (може не працювати з Pod Security Policy)
-          runAsGroup: 0
-          runAsNonRoot: false
-        volumeMounts:
-        - name: grafana-storage
-          mountPath: /var/lib/grafana
       containers:
       - name: grafana
         image: grafana/grafana:10.2.2
@@ -72,7 +58,7 @@ spec:
           runAsGroup: 472
           runAsNonRoot: true
           allowPrivilegeEscalation: false
-          readOnlyRootFilesystem: false  # Grafana потребує запису
+          readOnlyRootFilesystem: false
           capabilities:
             drop:
               - ALL
