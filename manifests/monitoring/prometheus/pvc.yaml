@@ -6,10 +6,25 @@ metadata:
   labels:
     app: prometheus
 spec:
+  # ВАРІАНТ 1: Використати існуючий PV (pv-sharedata1)
+  # ⚠️ ВАЖЛИВО: Спочатку видаліть старий PVC pvc-sharedata1 з namespace default,
+  # щоб звільнити PV для використання в monitoring namespace
+  # 
+  # Крок 1: Знайдіть ім'я PV
+  #   kubectl get pv
+  #   або в Portainer: Volumes → pvc-sharedata1 → поле "Volume"
+  #
+  # Крок 2: Видаліть старий PVC (якщо не використовується)
+  #   kubectl delete pvc pvc-sharedata1 -n default
+  #
+  # Крок 3: Розкоментуйте та вкажіть volumeName нижче:
+  # volumeName: pv-sharedata1  # Замініть на реальне ім'я PV, якщо відрізняється
+  
+  # ВАРІАНТ 2: Створити новий PVC на тому ж storage class
+  # (якщо не використовуєте volumeName, закоментуйте рядок вище)
   accessModes:
-    - ReadWriteOnce
+    - ReadWriteMany  # OCFS2 підтримує ReadWriteMany (RWX)
   resources:
     requests:
-      storage: 10Gi
-  # storageClassName: local-path  # для k3s default storage
-  # storageClassName: ocfs2  # якщо використовуєте OCFS2
+      storage: 10Gi  # Використовуємо весь доступний розмір як у pvc-sharedata1
+  storageClassName: ocfs2-shared  # Використовуємо той самий storage class що і існуючі volumes

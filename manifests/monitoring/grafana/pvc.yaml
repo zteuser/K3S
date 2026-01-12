@@ -6,10 +6,21 @@ metadata:
   labels:
     app: grafana
 spec:
+  # ⚠️ ВАЖЛИВО: pv-sharedata2 вже прив'язаний до portainer/portainer-data
+  # Тому створюємо новий PVC без volumeName
+  # OCFS2 дозволяє одночасний доступ, тому можна використати той самий фізичний storage
+  # 
+  # Якщо потрібно використати конкретний PV, спочатку звільніть pv-sharedata2:
+  # 1. kubectl delete pvc portainer-data -n portainer (якщо можна)
+  # 2. Розкоментуйте volumeName нижче:
+  # volumeName: pv-sharedata2
+  
+  # За замовчуванням - створюємо новий PVC на тому ж storage class
   accessModes:
-    - ReadWriteOnce
+    - ReadWriteMany  # OCFS2 підтримує ReadWriteMany (RWX) - має співпадати з PV
   resources:
     requests:
-      storage: 5Gi
-  # storageClassName: local-path  # для k3s default storage
-  # storageClassName: ocfs2  # якщо використовуєте OCFS2
+      storage: 48Gi  # Розмір для Grafana
+  storageClassName: ocfs2-shared  # Використовуємо той самий storage class що і існуючі volumes
+  # Якщо потрібно використати новий PV pv-grafana-data, розкоментуйте:
+  # volumeName: pv-grafana-data

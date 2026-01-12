@@ -2,6 +2,29 @@
 
 Цей документ містить покрокові інструкції для розгортання системи моніторингу k3s кластера через Portainer UI.
 
+## Як працює меню в Portainer
+
+В Portainer UI є два основні способи створення Kubernetes ресурсів:
+
+### Спосіб 1: Через Applications (рекомендовано)
+1. **Kubernetes** → **Applications**
+2. Виберіть namespace зі списку (наприклад, **monitoring**)
+3. Натисніть кнопку **Create from code** (або **Deploy from manifest**)
+4. Виберіть **Editor** (YAML mode)
+5. Вставте YAML маніфест
+6. Натисніть **Deploy** (або **Create**)
+
+### Спосіб 2: Через конкретний тип ресурсу
+1. **Kubernetes** → **[Тип ресурсу]** (наприклад, **Services**, **Deployments**, **ConfigMaps**)
+2. Натисніть кнопку **Add [тип]** (або **Create [тип]**)
+3. Виберіть namespace зі списку
+4. Виберіть **Editor** (YAML mode)
+5. Вставте YAML маніфест
+6. Натисніть **Create**
+
+**Примітка:** Для Cluster-level ресурсів (ClusterRole, ClusterRoleBinding) використовуйте:
+- **Kubernetes** → **Cluster roles** / **Cluster role bindings** → **Add [тип]**
+
 ## Передумови
 
 - Працюючий k3s кластер
@@ -38,19 +61,39 @@ Node Exporter збирає метрики з вузлів кластера (CPU,
 
 #### 2.1 Service для Node Exporter
 
-1. Перейдіть до **Kubernetes** → **Namespaces** → **monitoring**
-2. Виберіть **Services** → **Add service**
-3. Виберіть **Editor**
-4. Скопіюйте вміст файлу `node-exporter/service.yaml`
-5. Натисніть **Create the service**
+**Спосіб 1: Через Applications (рекомендовано)**
+1. Перейдіть до **Kubernetes** → **Applications**
+2. Виберіть namespace **monitoring** зі списку
+3. Натисніть кнопку **Create from code** (або **Deploy from manifest**)
+4. Виберіть **Editor** (YAML mode)
+5. Скопіюйте вміст файлу `node-exporter/service.yaml`
+6. Натисніть **Deploy** (або **Create**)
+
+**Спосіб 2: Через Services**
+1. Перейдіть до **Kubernetes** → **Services**
+2. Натисніть кнопку **Add service** (або **Create service**)
+3. Виберіть namespace **monitoring**
+4. Виберіть **Editor** (YAML mode)
+5. Скопіюйте вміст файлу `node-exporter/service.yaml`
+6. Натисніть **Create the service**
 
 #### 2.2 DaemonSet для Node Exporter
 
-1. Перейдіть до **Kubernetes** → **Namespaces** → **monitoring**
-2. Виберіть **DaemonSets** → **Add DaemonSet**
-3. Виберіть **Editor**
-4. Скопіюйте вміст файлу `node-exporter/daemonset.yaml`
-5. Натисніть **Create the DaemonSet**
+**Спосіб 1: Через Applications (рекомендовано)**
+1. Перейдіть до **Kubernetes** → **Applications**
+2. Виберіть namespace **monitoring** зі списку
+3. Натисніть кнопку **Create from code** (або **Deploy from manifest**)
+4. Виберіть **Editor** (YAML mode)
+5. Скопіюйте вміст файлу `node-exporter/daemonset.yaml`
+6. Натисніть **Deploy** (або **Create**)
+
+**Спосіб 2: Через DaemonSets**
+1. Перейдіть до **Kubernetes** → **DaemonSets**
+2. Натисніть кнопку **Add DaemonSet** (або **Create DaemonSet**)
+3. Виберіть namespace **monitoring**
+4. Виберіть **Editor** (YAML mode)
+5. Скопіюйте вміст файлу `node-exporter/daemonset.yaml`
+6. Натисніть **Create the DaemonSet**
 
 **Перевірка:**
 ```bash
@@ -66,11 +109,21 @@ Kube-state-metrics збирає метрики стану кластера (pods
 
 #### 3.1 ServiceAccount
 
-1. Перейдіть до **Kubernetes** → **Namespaces** → **monitoring**
-2. Виберіть **Service accounts** → **Add service account**
-3. Виберіть **Editor**
-4. Скопіюйте вміст файлу `kube-state-metrics/serviceaccount.yaml`
-5. Натисніть **Create the service account**
+**Через Applications (рекомендовано):**
+1. Перейдіть до **Kubernetes** → **Applications**
+2. Виберіть namespace **monitoring** зі списку
+3. Натисніть кнопку **Create from code** (або **Deploy from manifest**)
+4. Виберіть **Editor** (YAML mode)
+5. Скопіюйте вміст файлу `kube-state-metrics/serviceaccount.yaml`
+6. Натисніть **Deploy** (або **Create**)
+
+**Альтернативно через Service accounts:**
+1. Перейдіть до **Kubernetes** → **Service accounts**
+2. Натисніть кнопку **Add service account** (або **Create service account**)
+3. Виберіть namespace **monitoring**
+4. Виберіть **Editor** (YAML mode)
+5. Скопіюйте вміст файлу `kube-state-metrics/serviceaccount.yaml`
+6. Натисніть **Create the service account**
 
 #### 3.2 ClusterRole
 
@@ -90,19 +143,39 @@ Kube-state-metrics збирає метрики стану кластера (pods
 
 #### 3.4 Deployment
 
-1. Перейдіть до **Kubernetes** → **Namespaces** → **monitoring**
-2. Виберіть **Deployments** → **Add deployment**
-3. Виберіть **Editor**
-4. Скопіюйте вміст файлу `kube-state-metrics/deployment.yaml`
-5. Натисніть **Create the deployment**
+**Через Applications (рекомендовано):**
+1. Перейдіть до **Kubernetes** → **Applications**
+2. Виберіть namespace **monitoring** зі списку
+3. Натисніть кнопку **Create from code** (або **Deploy from manifest**)
+4. Виберіть **Editor** (YAML mode)
+5. Скопіюйте вміст файлу `kube-state-metrics/deployment.yaml`
+6. Натисніть **Deploy** (або **Create**)
+
+**Альтернативно через Deployments:**
+1. Перейдіть до **Kubernetes** → **Deployments**
+2. Натисніть кнопку **Add deployment** (або **Create deployment**)
+3. Виберіть namespace **monitoring**
+4. Виберіть **Editor** (YAML mode)
+5. Скопіюйте вміст файлу `kube-state-metrics/deployment.yaml`
+6. Натисніть **Create the deployment**
 
 #### 3.5 Service
 
-1. Перейдіть до **Kubernetes** → **Namespaces** → **monitoring**
-2. Виберіть **Services** → **Add service**
-3. Виберіть **Editor**
-4. Скопіюйте вміст файлу `kube-state-metrics/service.yaml`
-5. Натисніть **Create the service**
+**Через Applications (рекомендовано):**
+1. Перейдіть до **Kubernetes** → **Applications**
+2. Виберіть namespace **monitoring** зі списку
+3. Натисніть кнопку **Create from code** (або **Deploy from manifest**)
+4. Виберіть **Editor** (YAML mode)
+5. Скопіюйте вміст файлу `kube-state-metrics/service.yaml`
+6. Натисніть **Deploy** (або **Create**)
+
+**Альтернативно через Services:**
+1. Перейдіть до **Kubernetes** → **Services**
+2. Натисніть кнопку **Add service** (або **Create service**)
+3. Виберіть namespace **monitoring**
+4. Виберіть **Editor** (YAML mode)
+5. Скопіюйте вміст файлу `kube-state-metrics/service.yaml`
+6. Натисніть **Create the service**
 
 **Перевірка:**
 ```bash
@@ -118,11 +191,13 @@ Prometheus збирає та зберігає метрики.
 
 #### 4.1 ServiceAccount
 
-1. Перейдіть до **Kubernetes** → **Namespaces** → **monitoring**
-2. Виберіть **Service accounts** → **Add service account**
-3. Виберіть **Editor**
-4. Скопіюйте вміст файлу `prometheus/serviceaccount.yaml`
-5. Натисніть **Create the service account**
+**Через Applications (рекомендовано):**
+1. Перейдіть до **Kubernetes** → **Applications**
+2. Виберіть namespace **monitoring** зі списку
+3. Натисніть кнопку **Create from code** (або **Deploy from manifest**)
+4. Виберіть **Editor** (YAML mode)
+5. Скопіюйте вміст файлу `prometheus/serviceaccount.yaml`
+6. Натисніть **Deploy** (або **Create**)
 
 #### 4.2 ClusterRole
 
@@ -142,36 +217,85 @@ Prometheus збирає та зберігає метрики.
 
 #### 4.4 ConfigMap з конфігурацією Prometheus
 
-1. Перейдіть до **Kubernetes** → **Namespaces** → **monitoring**
-2. Виберіть **ConfigMaps** → **Add configmap**
-3. Виберіть **Editor**
-4. Скопіюйте вміст файлу `prometheus/configmap.yaml`
-5. Натисніть **Create the configmap**
+**Через Applications (рекомендовано):**
+1. Перейдіть до **Kubernetes** → **Applications**
+2. Виберіть namespace **monitoring** зі списку
+3. Натисніть кнопку **Create from code** (або **Deploy from manifest**)
+4. Виберіть **Editor** (YAML mode)
+5. Скопіюйте вміст файлу `prometheus/configmap.yaml`
+6. Натисніть **Deploy** (або **Create**)
+
+**Альтернативно через ConfigMaps:**
+1. Перейдіть до **Kubernetes** → **ConfigMaps**
+2. Натисніть кнопку **Add configmap** (або **Create configmap**)
+3. Виберіть namespace **monitoring**
+4. Виберіть **Editor** (YAML mode)
+5. Скопіюйте вміст файлу `prometheus/configmap.yaml`
+6. Натисніть **Create the configmap**
 
 #### 4.5 PersistentVolumeClaim для даних Prometheus
 
-1. Перейдіть до **Kubernetes** → **Namespaces** → **monitoring**
-2. Виберіть **PVCs** → **Add PVC**
-3. Виберіть **Editor**
-4. Скопіюйте вміст файлу `prometheus/pvc.yaml`
-5. **Важливо:** Якщо використовуєте OCFS2, розкоментуйте рядок `storageClassName: ocfs2`
-6. Натисніть **Create the PVC**
+**Якщо ви хочете використати існуючий volume (наприклад, pvc-sharedata1):**
+
+1. Спочатку знайдіть ім'я PV для pvc-sharedata1:
+   - В Portainer: **Kubernetes** → **Volumes** → клікніть на `pvc-sharedata1` → знайдіть поле **Volume**
+   - Або через kubectl: `kubectl get pvc pvc-sharedata1 -n default -o jsonpath='{.spec.volumeName}'`
+
+2. Перейдіть до **Kubernetes** → **Applications**
+3. Виберіть namespace **monitoring** зі списку
+4. Натисніть кнопку **Create from code** (або **Deploy from manifest**)
+5. Виберіть **Editor** (YAML mode)
+6. Скопіюйте вміст файлу `prometheus/pvc.yaml`
+7. **Для використання існуючого PV:** Розкоментуйте та вкажіть `volumeName: <PV_NAME_FOR_SHAREDATA1>`
+8. **Storage class:** Вже налаштовано на `ocfs2-shared` (той самий що і існуючі volumes)
+9. Натисніть **Deploy** (або **Create**)
+
+**Альтернативно через Volumes:**
+1. Перейдіть до **Kubernetes** → **Volumes**
+2. Натисніть кнопку **Add PVC** (або **Create PVC**)
+3. Виберіть namespace **monitoring**
+4. Виберіть **Editor** (YAML mode)
+5. Скопіюйте вміст файлу `prometheus/pvc.yaml`
+6. **Для використання існуючого PV:** Розкоментуйте та вкажіть `volumeName: <PV_NAME_FOR_SHAREDATA1>`
+7. Натисніть **Create the PVC**
+
+**Детальні інструкції:** Див. `USE_EXISTING_VOLUMES.md`
 
 #### 4.6 Deployment
 
-1. Перейдіть до **Kubernetes** → **Namespaces** → **monitoring**
-2. Виберіть **Deployments** → **Add deployment**
-3. Виберіть **Editor**
-4. Скопіюйте вміст файлу `prometheus/deployment.yaml`
-5. Натисніть **Create the deployment**
+**Через Applications (рекомендовано):**
+1. Перейдіть до **Kubernetes** → **Applications**
+2. Виберіть namespace **monitoring** зі списку
+3. Натисніть кнопку **Create from code** (або **Deploy from manifest**)
+4. Виберіть **Editor** (YAML mode)
+5. Скопіюйте вміст файлу `prometheus/deployment.yaml`
+6. Натисніть **Deploy** (або **Create**)
+
+**Альтернативно через Deployments:**
+1. Перейдіть до **Kubernetes** → **Deployments**
+2. Натисніть кнопку **Add deployment** (або **Create deployment**)
+3. Виберіть namespace **monitoring**
+4. Виберіть **Editor** (YAML mode)
+5. Скопіюйте вміст файлу `prometheus/deployment.yaml`
+6. Натисніть **Create the deployment**
 
 #### 4.7 Service
 
-1. Перейдіть до **Kubernetes** → **Namespaces** → **monitoring**
-2. Виберіть **Services** → **Add service**
-3. Виберіть **Editor**
-4. Скопіюйте вміст файлу `prometheus/service.yaml`
-5. Натисніть **Create the service**
+**Через Applications (рекомендовано):**
+1. Перейдіть до **Kubernetes** → **Applications**
+2. Виберіть namespace **monitoring** зі списку
+3. Натисніть кнопку **Create from code** (або **Deploy from manifest**)
+4. Виберіть **Editor** (YAML mode)
+5. Скопіюйте вміст файлу `prometheus/service.yaml`
+6. Натисніть **Deploy** (або **Create**)
+
+**Альтернативно через Services:**
+1. Перейдіть до **Kubernetes** → **Services**
+2. Натисніть кнопку **Add service** (або **Create service**)
+3. Виберіть namespace **monitoring**
+4. Виберіть **Editor** (YAML mode)
+5. Скопіюйте вміст файлу `prometheus/service.yaml`
+6. Натисніть **Create the service**
 
 **Перевірка:**
 ```bash
@@ -192,53 +316,123 @@ Grafana для візуалізації метрик.
 
 #### 5.1 ConfigMap з конфігурацією Grafana
 
-1. Перейдіть до **Kubernetes** → **Namespaces** → **monitoring**
-2. Виберіть **ConfigMaps** → **Add configmap**
-3. Виберіть **Editor**
-4. Скопіюйте вміст файлу `grafana/configmap.yaml`
-5. Натисніть **Create the configmap**
+**Через Applications (рекомендовано):**
+1. Перейдіть до **Kubernetes** → **Applications**
+2. Виберіть namespace **monitoring** зі списку
+3. Натисніть кнопку **Create from code** (або **Deploy from manifest**)
+4. Виберіть **Editor** (YAML mode)
+5. Скопіюйте вміст файлу `grafana/configmap.yaml`
+6. Натисніть **Deploy** (або **Create**)
+
+**Альтернативно через ConfigMaps:**
+1. Перейдіть до **Kubernetes** → **ConfigMaps**
+2. Натисніть кнопку **Add configmap** (або **Create configmap**)
+3. Виберіть namespace **monitoring**
+4. Виберіть **Editor** (YAML mode)
+5. Скопіюйте вміст файлу `grafana/configmap.yaml`
+6. Натисніть **Create the configmap**
 
 #### 5.2 ConfigMap з datasources
 
-1. Перейдіть до **Kubernetes** → **Namespaces** → **monitoring**
-2. Виберіть **ConfigMaps** → **Add configmap**
-3. Виберіть **Editor**
-4. Скопіюйте вміст файлу `grafana/configmap-datasources.yaml`
-5. Натисніть **Create the configmap**
+**Через Applications (рекомендовано):**
+1. Перейдіть до **Kubernetes** → **Applications**
+2. Виберіть namespace **monitoring** зі списку
+3. Натисніть кнопку **Create from code** (або **Deploy from manifest**)
+4. Виберіть **Editor** (YAML mode)
+5. Скопіюйте вміст файлу `grafana/configmap-datasources.yaml`
+6. Натисніть **Deploy** (або **Create**)
+
+**Альтернативно через ConfigMaps:**
+1. Перейдіть до **Kubernetes** → **ConfigMaps**
+2. Натисніть кнопку **Add configmap** (або **Create configmap**)
+3. Виберіть namespace **monitoring**
+4. Виберіть **Editor** (YAML mode)
+5. Скопіюйте вміст файлу `grafana/configmap-datasources.yaml`
+6. Натисніть **Create the configmap**
 
 #### 5.3 Secret з credentials
 
-1. Перейдіть до **Kubernetes** → **Namespaces** → **monitoring**
-2. Виберіть **Secrets** → **Add secret**
-3. Виберіть **Editor**
-4. Скопіюйте вміст файлу `grafana/secret.yaml`
-5. **ВАЖЛИВО:** Змініть `admin-password` на безпечний пароль!
-6. Натисніть **Create the secret**
+**Через Applications (рекомендовано):**
+1. Перейдіть до **Kubernetes** → **Applications**
+2. Виберіть namespace **monitoring** зі списку
+3. Натисніть кнопку **Create from code** (або **Deploy from manifest**)
+4. Виберіть **Editor** (YAML mode)
+5. Скопіюйте вміст файлу `grafana/secret.yaml`
+6. **ВАЖЛИВО:** Змініть `admin-password` на безпечний пароль!
+7. Натисніть **Deploy** (або **Create**)
+
+**Альтернативно через Secrets:**
+1. Перейдіть до **Kubernetes** → **Secrets**
+2. Натисніть кнопку **Add secret** (або **Create secret**)
+3. Виберіть namespace **monitoring**
+4. Виберіть **Editor** (YAML mode)
+5. Скопіюйте вміст файлу `grafana/secret.yaml`
+6. **ВАЖЛИВО:** Змініть `admin-password` на безпечний пароль!
+7. Натисніть **Create the secret**
 
 #### 5.4 PersistentVolumeClaim для даних Grafana
 
-1. Перейдіть до **Kubernetes** → **Namespaces** → **monitoring**
-2. Виберіть **PVCs** → **Add PVC**
-3. Виберіть **Editor**
-4. Скопіюйте вміст файлу `grafana/pvc.yaml`
-5. **Важливо:** Якщо використовуєте OCFS2, розкоментуйте рядок `storageClassName: ocfs2`
-6. Натисніть **Create the PVC**
+**Якщо ви хочете використати існуючий volume (наприклад, pvc-sharedata2):**
+
+1. Спочатку знайдіть ім'я PV для pvc-sharedata2:
+   - В Portainer: **Kubernetes** → **Volumes** → клікніть на `pvc-sharedata2` → знайдіть поле **Volume**
+   - Або через kubectl: `kubectl get pvc pvc-sharedata2 -n default -o jsonpath='{.spec.volumeName}'`
+
+2. Перейдіть до **Kubernetes** → **Applications**
+3. Виберіть namespace **monitoring** зі списку
+4. Натисніть кнопку **Create from code** (або **Deploy from manifest**)
+5. Виберіть **Editor** (YAML mode)
+6. Скопіюйте вміст файлу `grafana/pvc.yaml`
+7. **Для використання існуючого PV:** Розкоментуйте та вкажіть `volumeName: <PV_NAME_FOR_SHAREDATA2>`
+8. **Storage class:** Вже налаштовано на `ocfs2-shared` (той самий що і існуючі volumes)
+9. Натисніть **Deploy** (або **Create**)
+
+**Альтернативно через Volumes:**
+1. Перейдіть до **Kubernetes** → **Volumes**
+2. Натисніть кнопку **Add PVC** (або **Create PVC**)
+3. Виберіть namespace **monitoring**
+4. Виберіть **Editor** (YAML mode)
+5. Скопіюйте вміст файлу `grafana/pvc.yaml`
+6. **Для використання існуючого PV:** Розкоментуйте та вкажіть `volumeName: <PV_NAME_FOR_SHAREDATA2>`
+7. Натисніть **Create the PVC**
+
+**Детальні інструкції:** Див. `USE_EXISTING_VOLUMES.md`
 
 #### 5.5 Deployment
 
-1. Перейдіть до **Kubernetes** → **Namespaces** → **monitoring**
-2. Виберіть **Deployments** → **Add deployment**
-3. Виберіть **Editor**
-4. Скопіюйте вміст файлу `grafana/deployment.yaml`
-5. Натисніть **Create the deployment**
+**Через Applications (рекомендовано):**
+1. Перейдіть до **Kubernetes** → **Applications**
+2. Виберіть namespace **monitoring** зі списку
+3. Натисніть кнопку **Create from code** (або **Deploy from manifest**)
+4. Виберіть **Editor** (YAML mode)
+5. Скопіюйте вміст файлу `grafana/deployment.yaml`
+6. Натисніть **Deploy** (або **Create**)
+
+**Альтернативно через Deployments:**
+1. Перейдіть до **Kubernetes** → **Deployments**
+2. Натисніть кнопку **Add deployment** (або **Create deployment**)
+3. Виберіть namespace **monitoring**
+4. Виберіть **Editor** (YAML mode)
+5. Скопіюйте вміст файлу `grafana/deployment.yaml`
+6. Натисніть **Create the deployment**
 
 #### 5.6 Service
 
-1. Перейдіть до **Kubernetes** → **Namespaces** → **monitoring**
-2. Виберіть **Services** → **Add service**
-3. Виберіть **Editor**
-4. Скопіюйте вміст файлу `grafana/service.yaml`
-5. Натисніть **Create the service**
+**Через Applications (рекомендовано):**
+1. Перейдіть до **Kubernetes** → **Applications**
+2. Виберіть namespace **monitoring** зі списку
+3. Натисніть кнопку **Create from code** (або **Deploy from manifest**)
+4. Виберіть **Editor** (YAML mode)
+5. Скопіюйте вміст файлу `grafana/service.yaml`
+6. Натисніть **Deploy** (або **Create**)
+
+**Альтернативно через Services:**
+1. Перейдіть до **Kubernetes** → **Services**
+2. Натисніть кнопку **Add service** (або **Create service**)
+3. Виберіть namespace **monitoring**
+4. Виберіть **Editor** (YAML mode)
+5. Скопіюйте вміст файлу `grafana/service.yaml`
+6. Натисніть **Create the service**
 
 **Перевірка:**
 ```bash

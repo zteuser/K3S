@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: grafana-data
+  namespace: monitoring
+  labels:
+    app: grafana
+spec:
+  # ВАРІАНТ 1: Якщо ви хочете використати існуючий PV напряму
+  # Спочатку знайдіть ім'я PV для pvc-sharedata2:
+  # kubectl get pv
+  # Потім вкажіть volumeName нижче
+  # volumeName: pv-sharedata2  # Замініть на реальне ім'я PV
+  
+  # ВАРІАНТ 2: Створіть новий PVC з тими самими параметрами що і pvc-sharedata2
+  # Це створить новий PVC, який буде використовувати той самий storage
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 48Gi  # Використовуємо весь доступний розмір
+  storageClassName: ocfs2-shared

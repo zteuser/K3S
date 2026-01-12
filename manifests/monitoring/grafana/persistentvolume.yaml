@@ -1,0 +1,29 @@
+# Новий PV для Grafana (якщо потрібен окремий volume)
+# Використовує той самий фізичний storage /sharedata2 (OCFS2 дозволяє одночасний доступ)
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-grafana-data
+  labels:
+    type: ocfs2
+    storage: grafana
+spec:
+  capacity:
+    storage: 48Gi
+  accessModes:
+    - ReadWriteMany  # OCFS2 підтримує одночасний доступ з кількох нод
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ocfs2-shared
+  hostPath:
+    path: /sharedata2  # Той самий фізичний storage, що і pv-sharedata2
+    type: DirectoryOrCreate
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - master-node
+          - work-node

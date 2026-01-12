@@ -63,6 +63,16 @@
 
 ---
 
+## Використання існуючих volumes
+
+Якщо у вас вже є volumes `pvc-sharedata1` та `pvc-sharedata2` і ви хочете використати їх для моніторингу:
+- **Prometheus** буде використовувати `pvc-sharedata1`
+- **Grafana** буде використовувати `pvc-sharedata2`
+
+**Детальні інструкції:** Див. `USE_EXISTING_VOLUMES.md`
+
+---
+
 ## Розгортання через Portainer UI
 
 ### Крок 1: Створення Namespace
