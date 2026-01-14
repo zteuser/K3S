@@ -347,3 +347,22 @@ snmp_tcpCurrEstab{job="snmp-routers"}
 - [SNMP Exporter Documentation](https://github.com/prometheus/snmp_exporter)
 - [SNMP Exporter Configuration Generator](https://github.com/prometheus/snmp_exporter/tree/main/generator)
 - [Prometheus SNMP Monitoring Guide](https://prometheus.io/docs/guides/snmp/)
+
+## Grafana dashboards (імпорт)
+
+### Варіант 1: Автопровіжнінг (рекомендовано)
+
+1. Створіть/оновіть ConfigMap `grafana-dashboard-providers` та `grafana-dashboards-json`:
+   - файл: `grafana/configmap-dashboards.yaml`
+2. Оновіть Grafana deployment (додані volume mounts):
+   - файл: `grafana/deployment.yaml`
+3. Перезапустіть Grafana pod.
+
+Після перезапуску в Grafana з’явиться папка **SNMP** з дашбордом **SNMP Routers (vrn625 / syhiv17)**.
+
+### Варіант 2: Імпорт через UI
+
+1. Grafana → **Dashboards** → **New** → **Import**
+2. Вставте JSON з файлу:
+   - `grafana/dashboards/snmp-routers.json`
+3. Виберіть datasource **Prometheus** → **Import**.

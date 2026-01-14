@@ -12,6 +12,15 @@ data:
     - name: Prometheus
       type: prometheus
       access: proxy
+      # NOTE:
+      # If Grafana pod can't resolve cluster DNS (e.g. "lookup prometheus: i/o timeout"),
+      # replace the URL with the Prometheus Service ClusterIP.
+      #
+      # Find it with:
+      #   k3s kubectl -n monitoring get svc prometheus -o wide
+      #
+      # Example:
+      #   url: http://10.43.x.y:9090
       url: http://prometheus:9090
       isDefault: true
       editable: true

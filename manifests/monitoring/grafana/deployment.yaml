@@ -57,14 +57,19 @@ spec:
             secretKeyRef:
               name: grafana-admin
               key: admin-password
-        - name: GF_INSTALL_PLUGINS
-          value: "grafana-piechart-panel"
+        # NOTE: Plugin auto-install requires outbound access to grafana.com.
+        # If the cluster/node has no internet access, Grafana will CrashLoopBackOff.
+        # Dashboards in this repo do not require extra plugins.
         volumeMounts:
         - name: grafana-config
           mountPath: /etc/grafana/grafana.ini
           subPath: grafana.ini
         - name: grafana-datasources
           mountPath: /etc/grafana/provisioning/datasources
+        - name: grafana-dashboard-providers
+          mountPath: /etc/grafana/provisioning/dashboards
+        - name: grafana-dashboards-json
+          mountPath: /etc/grafana/provisioning/dashboards-json
         - name: grafana-storage
           mountPath: /var/lib/grafana
         securityContext:
@@ -104,6 +109,12 @@ spec:
       - name: grafana-datasources
         configMap:
           name: grafana-datasources
+      - name: grafana-dashboard-providers
+        configMap:
+          name: grafana-dashboard-providers
+      - name: grafana-dashboards-json
+        configMap:
+          name: grafana-dashboards-json
       - name: grafana-storage
         persistentVolumeClaim:
           claimName: grafana-data
