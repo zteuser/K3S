@@ -14,119 +14,88 @@ data:
         cluster: 'k3s-cluster'
         replica: 'prometheus-0'
 
-    # Alertmanager configuration (опціонально)
-    # alerting:
-    #   alertmanagers:
-    #     - static_configs:
-    #         - targets: ['alertmanager:9093']
-
-    # Load rules once and periodically evaluate them
-    rule_files:
-      # - "alerts.yml"
-
-    # Scrape configurations
     scrape_configs:
-      # Prometheus itself
       - job_name: 'prometheus'
         static_configs:
           - targets: ['localhost:9090']
 
-      # Kubernetes API server
       - job_name: 'kubernetes-apiservers'
-        kubernetes_sd_configs:
-          - role: endpoints
+        static_configs:
+          - targets: ['192.168.2.19:6443']
         scheme: https
         tls_config:
           ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
         bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
-        relabel_configs:
-          - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
-            action: keep
-            regex: default;kubernetes;https
 
-      # Kubernetes nodes
       - job_name: 'kubernetes-nodes'
-        kubernetes_sd_configs:
-          - role: node
+        static_configs:
+          - targets: ['10.0.10.10:10250', '10.0.10.20:10250', '192.168.2.19:10250']
         scheme: https
         tls_config:
-          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+          insecure_skip_verify: true
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+
+      - job_name: 'node-exporter'
+        static_configs:
+          - targets: ['10.0.10.10:9100', '10.0.10.20:9100', '192.168.2.19:9100']
+
+      - job_name: 'cadvisor'
+        static_configs:
+          - targets: ['10.0.10.10:10250', '10.0.10.20:10250', '192.168.2.19:10250']
+        scheme: https
+        tls_config:
+          insecure_skip_verify: true
         bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
         relabel_configs:
-          - action: labelmap
-            regex: __meta_kubernetes_node_label_(.+)
-          - target_label: __address__
-            replacement: kubernetes.default.svc:443
-          - source_labels: [__meta_kubernetes_node_name]
-            regex: (.+)
+          - source_labels: [__address__]
             target_label: __metrics_path__
-            replacement: /api/v1/nodes/${1}/proxy/metrics
+            replacement: /metrics/cadvisor
+        scrape_interval: 30s
+        scrape_timeout: 20s
 
-      # Kubernetes pods
-      - job_name: 'kubernetes-pods'
-        kubernetes_sd_configs:
-          - role: pod
-        relabel_configs:
-          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
-            action: keep
-            regex: true
-          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
-            action: replace
-            target_label: __metrics_path__
-            regex: (.+)
-          - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
-            action: replace
-            regex: ([^:]+)(?::\d+)?;(\d+)
-            replacement: $1:$2
-            target_label: __address__
-          - action: labelmap
-            regex: __meta_kubernetes_pod_label_(.+)
-          - source_labels: [__meta_kubernetes_namespace]
-            action: replace
-            target_label: kubernetes_namespace
-          - source_labels: [__meta_kubernetes_pod_name]
-            action: replace
-            target_label: kubernetes_pod_name
-
-      # Node Exporter
-      - job_name: 'node-exporter'
-        kubernetes_sd_configs:
-          - role: pod
-        relabel_configs:
-          - source_labels: [__meta_kubernetes_pod_label_app]
-            action: keep
-            regex: node-exporter
-          - source_labels: [__meta_kubernetes_pod_node_name]
-            action: replace
-            target_label: instance
-          - source_labels: [__meta_kubernetes_pod_ip]
-            action: replace
-            regex: (.+)
-            target_label: __address__
-            replacement: $1:9100
-
-      # Kube-state-metrics
       - job_name: 'kube-state-metrics'
         static_configs:
-          - targets: ['kube-state-metrics:8080']
+          - targets: ['10.42.2.24:8080']
+        scrape_interval: 30s
+        scrape_timeout: 20s
 
-      # cAdvisor (вбудований в k3s)
-      # ВИМКНЕНО: В k3s доступ до cadvisor через API proxy часто обмежений
-      # Використовуйте Node Exporter для метрик контейнерів (вже налаштовано вище)
-      # Якщо потрібен cadvisor, налаштуйте прямий доступ або додайте додаткові права
-      # - job_name: 'cadvisor'
-      #   kubernetes_sd_configs:
-      #     - role: node
-      #   scheme: https
-      #   tls_config:
-      #     ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
-      #     bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
-      #   relabel_configs:
-      #     - action: labelmap
-      #       regex: __meta_kubernetes_node_label_(.+)
-      #     - target_label: __address__
-      #       replacement: kubernetes.default.svc:443
-      #     - source_labels: [__meta_kubernetes_node_name]
-      #       regex: (.+)
-      #       target_label: __metrics_path__
-      #       replacement: /api/v1/nodes/${1}/proxy/metrics/cadvisor
+      # SNMP Exporter для моніторингу роутерів
+      - job_name: 'snmp-routers'
+        scrape_interval: 60s  # Інтервал опитування роутерів (60 секунд)
+        scrape_timeout: 60s  # Збільшено timeout для SNMP запитів
+        static_configs:
+          # Роутер vrn625 (UCG Ultra with UniFi OS)
+          - targets:
+            - 192.168.2.1
+            labels:
+              router_name: 'vrn625'
+              router_ip: '192.168.2.1'
+              router_model: 'UCG-Ultra'
+              router_type: 'UniFi-OS'
+          # Роутер syhiv17 (EdgeRouter-X)
+          - targets:
+            - 192.168.1.1
+            labels:
+              router_name: 'syhiv17'
+              router_ip: '192.168.1.1'
+              router_model: 'EdgeRouter-X'
+              router_type: 'EdgeOS'
+        metrics_path: /snmp
+        params:
+          module: [router]
+        relabel_configs:
+          - source_labels: [__address__]
+            target_label: __param_target
+          # Використовуємо специфічний модуль для кожного роутера
+          - source_labels: [router_name]
+            target_label: __param_module
+            regex: vrn625
+            replacement: unifi_ucg
+          - source_labels: [router_name]
+            regex: syhiv17
+            target_label: __param_module
+            replacement: edgerouter_x
+          - source_labels: [__param_target]
+            target_label: instance
+          - target_label: __address__
+            replacement: snmp-exporter:9116
