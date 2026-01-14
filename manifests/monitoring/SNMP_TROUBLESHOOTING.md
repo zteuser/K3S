@@ -66,6 +66,19 @@ curl "http://localhost:9116/snmp?target=192.168.2.1&module=unifi_ucg"
 curl "http://localhost:9116/snmp?target=192.168.1.1&module=edgerouter_x"
 ```
 
+### Важливо про тестування через `nc | head`
+
+Якщо ви робите тест типу `... | nc ... | head`, `head` може **закрити** TCP-зʼєднання раніше часу,
+і snmp-exporter може показати помилку **`operation was canceled`** (context canceled).
+
+Щоб уникнути цього, краще зберігати відповідь в файл і вже потім робити `head`:
+
+```sh
+# В консолі snmp-exporter pod
+wget -q -O /tmp/snmp.txt --timeout=60 "http://localhost:9116/snmp?auth=public_v2&module=unifi_ucg&target=192.168.2.1"
+head -120 /tmp/snmp.txt
+```
+
 **Якщо curl працює:**
 - SNMP Exporter працює правильно
 - Проблема в мережевій доступності або конфігурації Prometheus

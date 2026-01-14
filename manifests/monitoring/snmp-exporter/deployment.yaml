@@ -15,6 +15,9 @@ spec:
       labels:
         app: snmp-exporter
     spec:
+      # If SNMP routes to 192.168.x.x exist only on a specific node, pin the exporter there:
+      # nodeSelector:
+      #   kubernetes.io/hostname: macmini7
       containers:
       - name: snmp-exporter
         image: prom/snmp-exporter:v0.25.0
