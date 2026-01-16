@@ -131,7 +131,7 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "snmp_sysUpTime{job=\"snmp-routers\", instance=~\"$instance\"} / 360000",
+          "expr": "sysUpTime{job=\"snmp-routers\", instance=~\"$instance\"} / 360000",
           "legendFormat": "{{router_name}}",
           "range": true,
           "refId": "A"
@@ -176,15 +176,15 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "topk(10, rate(snmp_ifHCInOctets{job=\"snmp-routers\", instance=~\"$instance\"}[5m]) * 8)",
-          "legendFormat": "in if{{ifIndex}}",
+          "expr": "topk(10, rate(ifHCInOctets{job=\"snmp-routers\", instance=~\"$instance\"}[5m]) * 8) * on(instance, ifIndex) group_left(ifDescr) ifDescr{job=\"snmp-routers\", instance=~\"$instance\"}",
+          "legendFormat": "in {{ifDescr}}",
           "range": true,
           "refId": "A"
         },
         {
           "editorMode": "code",
-          "expr": "topk(10, rate(snmp_ifHCOutOctets{job=\"snmp-routers\", instance=~\"$instance\"}[5m]) * 8)",
-          "legendFormat": "out if{{ifIndex}}",
+          "expr": "topk(10, rate(ifHCOutOctets{job=\"snmp-routers\", instance=~\"$instance\"}[5m]) * 8) * on(instance, ifIndex) group_left(ifDescr) ifDescr{job=\"snmp-routers\", instance=~\"$instance\"}",
+          "legendFormat": "out {{ifDescr}}",
           "range": true,
           "refId": "B"
         }
@@ -228,15 +228,15 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "topk(10, rate(snmp_ifInErrors{job=\"snmp-routers\", instance=~\"$instance\"}[5m]))",
-          "legendFormat": "inErrors if{{ifIndex}}",
+          "expr": "topk(10, rate(ifInErrors{job=\"snmp-routers\", instance=~\"$instance\"}[5m])) * on(instance, ifIndex) group_left(ifDescr) ifDescr{job=\"snmp-routers\", instance=~\"$instance\"}",
+          "legendFormat": "inErrors {{ifDescr}}",
           "range": true,
           "refId": "A"
         },
         {
           "editorMode": "code",
-          "expr": "topk(10, rate(snmp_ifOutErrors{job=\"snmp-routers\", instance=~\"$instance\"}[5m]))",
-          "legendFormat": "outErrors if{{ifIndex}}",
+          "expr": "topk(10, rate(ifOutErrors{job=\"snmp-routers\", instance=~\"$instance\"}[5m])) * on(instance, ifIndex) group_left(ifDescr) ifDescr{job=\"snmp-routers\", instance=~\"$instance\"}",
+          "legendFormat": "outErrors {{ifDescr}}",
           "range": true,
           "refId": "B"
         }
@@ -280,8 +280,8 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "snmp_ifOperStatus{job=\"snmp-routers\", instance=~\"$instance\"}",
-          "legendFormat": "if{{ifIndex}} operStatus",
+          "expr": "ifOperStatus{job=\"snmp-routers\", instance=~\"$instance\"} * on(instance, ifIndex) group_left(ifDescr) ifDescr{job=\"snmp-routers\", instance=~\"$instance\"}",
+          "legendFormat": "{{ifDescr}} operStatus",
           "range": true,
           "refId": "A"
         }
