@@ -34,7 +34,7 @@ resources:
   - grafana/pvc.yaml
   - grafana/deployment.yaml
   - grafana/service.yaml
-  - grafana/ingress.yaml
+  - grafana/ingressroute.yaml
 
 # Common labels
 commonLabels:
