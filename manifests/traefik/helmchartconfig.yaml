@@ -10,3 +10,12 @@ spec:
     # через що Traefik не бачить Services/IngressRoute і повертає 404.
     nodeSelector:
       kubernetes.io/hostname: master-node
+
+    # Critical fix: Pod-и (включно з Traefik) у вашому кластері мають проблеми з доступом
+    # до kubernetes.default Service IP (10.43.0.1:443). Вказуємо Traefik прямий endpoint API.
+    # 192.168.2.19:6443 — API server k3s у вашій мережі (див. prometheus job kubernetes-apiservers).
+    additionalArguments:
+      - "--providers.kubernetesingress.endpoint=https://192.168.2.19:6443"
+      - "--providers.kubernetesingress.insecureSkipVerify=true"
+      - "--providers.kubernetescrd.endpoint=https://192.168.2.19:6443"
+      - "--providers.kubernetescrd.insecureSkipVerify=true"
