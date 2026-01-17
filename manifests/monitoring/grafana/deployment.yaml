@@ -27,7 +27,7 @@ spec:
               - key: kubernetes.io/hostname
                 operator: In
                 values:
-                - work-node
+                - master-node
       # Security context для правильних прав доступу до volume
       securityContext:
         fsGroup: 472  # grafana group - автоматично встановить права на volume

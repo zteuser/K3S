@@ -5,7 +5,8 @@ metadata:
   namespace: kube-system
 spec:
   valuesContent: |-
-    # Workaround: виносимо Traefik з macmini7 на work-node, щоб він мав стабільний доступ
-    # до сервісів monitoring namespace (Grafana/Prometheus) без між-нодового overlay глюку.
+    # Workaround: запускаємо Traefik на master-node (10.0.10.10), щоб він мав стабільний доступ
+    # до Kubernetes API (10.43.0.1:443). На work-node зараз є "no route to host" до API,
+    # через що Traefik не бачить Services/IngressRoute і повертає 404.
     nodeSelector:
-      kubernetes.io/hostname: work-node
+      kubernetes.io/hostname: master-node
