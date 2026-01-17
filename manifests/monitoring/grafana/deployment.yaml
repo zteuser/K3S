@@ -15,12 +15,20 @@ spec:
       labels:
         app: grafana
     spec:
-      # Workaround: якщо між-нодовий pod-network/DNS нестабільний, тримаємо Grafana
-      # на тому ж ноді, що і Traefik (у вашому кластері це `macmini7`).
-      # За потреби змініть значення на вашу ноду з Traefik:
-      #   kubectl -n kube-system get pod -l app.kubernetes.io/name=traefik -o wide
-      nodeSelector:
-        kubernetes.io/hostname: macmini7
+      # Grafana має бути запланована тільки на нодах з OCFS volume.
+      # У вашому середовищі це 10.0.10.10 та 10.0.10.20, які відповідають hostname:
+      # - master-node
+      # - work-node
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                - master-node
+                - work-node
       # Security context для правильних прав доступу до volume
       securityContext:
         fsGroup: 472  # grafana group - автоматично встановить права на volume
