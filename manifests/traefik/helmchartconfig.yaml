@@ -11,11 +11,8 @@ spec:
     nodeSelector:
       kubernetes.io/hostname: master-node
 
-    # Critical fix: Pod-и (включно з Traefik) у вашому кластері мають проблеми з доступом
-    # до kubernetes.default Service IP (10.43.0.1:443). Вказуємо Traefik прямий endpoint API.
-    # 192.168.2.19:6443 — API server k3s у вашій мережі (див. prometheus job kubernetes-apiservers).
-    additionalArguments:
-      - "--providers.kubernetesingress.endpoint=https://192.168.2.19:6443"
-      - "--providers.kubernetesingress.tls.insecureSkipVerify=true"
-      - "--providers.kubernetescrd.endpoint=https://192.168.2.19:6443"
-      - "--providers.kubernetescrd.tls.insecureSkipVerify=true"
+    # Critical workaround: pod-network у вашому кластері має проблеми з доступом до Service IP
+    # (включно з kubernetes.default 10.43.0.1:443). Запускаємо Traefik у hostNetwork, щоб він
+    # використовував мережевий стек хоста (де kube-proxy правила для Service IP працюють).
+    hostNetwork: true
+    dnsPolicy: ClusterFirstWithHostNet
