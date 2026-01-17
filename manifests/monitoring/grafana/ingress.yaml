@@ -8,7 +8,6 @@ metadata:
     # тому залишаємо обидва механізми + явно задаємо правило і entrypoint.
     kubernetes.io/ingress.class: traefik
     traefik.ingress.kubernetes.io/router.entrypoints: web
-    traefik.ingress.kubernetes.io/router.rule: Host(`monitoring.lan`)
 spec:
   ingressClassName: traefik
   rules:
