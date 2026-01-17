@@ -15,7 +15,8 @@ data:
 
     [server]
     http_port = 3000
-    root_url = %(protocol)s://%(domain)s:%(http_port)s/
+    domain = monitoring.lan
+    root_url = %(protocol)s://%(domain)s/
 
     [database]
     type = sqlite3
