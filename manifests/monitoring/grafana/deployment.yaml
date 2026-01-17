@@ -27,7 +27,6 @@ spec:
               - key: kubernetes.io/hostname
                 operator: In
                 values:
-                - master-node
                 - work-node
       # Security context для правильних прав доступу до volume
       securityContext:

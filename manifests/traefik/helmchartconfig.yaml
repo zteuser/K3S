@@ -1,0 +1,11 @@
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: traefik
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    # Workaround: виносимо Traefik з macmini7 на work-node, щоб він мав стабільний доступ
+    # до сервісів monitoring namespace (Grafana/Prometheus) без між-нодового overlay глюку.
+    nodeSelector:
+      kubernetes.io/hostname: work-node
