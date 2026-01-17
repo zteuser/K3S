@@ -15,6 +15,12 @@ spec:
       labels:
         app: grafana
     spec:
+      # Workaround: якщо між-нодовий pod-network/DNS нестабільний, тримаємо Grafana
+      # на тому ж ноді, що і Traefik (у вашому кластері це `macmini7`).
+      # За потреби змініть значення на вашу ноду з Traefik:
+      #   kubectl -n kube-system get pod -l app.kubernetes.io/name=traefik -o wide
+      nodeSelector:
+        kubernetes.io/hostname: macmini7
       # Security context для правильних прав доступу до volume
       securityContext:
         fsGroup: 472  # grafana group - автоматично встановить права на volume
