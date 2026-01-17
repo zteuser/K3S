@@ -6,9 +6,10 @@ metadata:
 spec:
   entryPoints:
   - web
+  - websecure
   routes:
   - kind: Rule
-    match: Host(`monitoring.lan`)
+    match: Host(`monitoring.lan`) && PathPrefix(`/`)
     services:
     - name: grafana
       port: 3000
