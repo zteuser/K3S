@@ -1,6 +1,8 @@
 #!/bin/bash
 # Застосувати nodeAffinity до CoreDNS, щоб под планувався лише на нодах з доступом до API
 # (master-node, macmini7). Виправляє "no route to host" та Readiness probe 503 на work-node.
+#
+# Якщо з'являється "permission denied" на k3s.yaml — запускайте: sudo ./apply-coredns-node-affinity.sh
 set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 echo "Applying CoreDNS nodeAffinity patch (schedule only on master-node, macmini7)..."

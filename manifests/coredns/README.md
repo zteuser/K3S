@@ -62,16 +62,16 @@ kubectl logs -n kube-system -l k8s-app=kube-dns --tail=50
 
 ### Крок 1: Застосувати патч nodeAffinity
 
-З каталогу `manifests/coredns`:
+З каталогу `manifests/coredns` (якщо kubeconfig k3s доступний лише root — з `sudo`):
 
 ```bash
-./apply-coredns-node-affinity.sh
+sudo ./apply-coredns-node-affinity.sh
 ```
 
 або вручну:
 
 ```bash
-kubectl patch deployment coredns -n kube-system --patch-file=manifests/coredns/coredns-node-affinity-patch.yaml
+sudo kubectl patch deployment coredns -n kube-system --patch-file=manifests/coredns/coredns-node-affinity-patch.yaml
 ```
 
 У патчі вказано ноди **master-node** та **macmini7**. Якщо у вас інші імена нод з доступом до API — відредагуйте `coredns-node-affinity-patch.yaml` (поле `values`).
