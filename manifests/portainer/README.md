@@ -13,6 +13,7 @@ Portainer - це легкий веб-інтерфейс для управлін�
 - **Deployment**: 1 replica Portainer CE
 - **Service**: NodePort (порти 30900 для HTTP, 30943 для HTTPS)
 - **Ingress**: доступ через **https://portainer.lan** (Traefik, TLS) — див. `PORTAINER_INGRESS.md`
+- **Failover**: автоматичне перемикання portainer.lan на робочу ноду при падінні 10.0.10.10 — див. `FAILOVER_PORTAINER_LAN.md`
 - **Storage**: PVC з використанням OCFS2 shared storage (sharedata1)
 
 ## Передумови
@@ -37,6 +38,7 @@ Portainer - це легкий веб-інтерфейс для управлін�
 - `ingress.yaml` - Ingress для доступу через https://portainer.lan
 - `kustomization.yaml` - Kustomize конфігурація
 - `PORTAINER_INGRESS.md` - налаштування https://portainer.lan та TLS secret
+- `FAILOVER_PORTAINER_LAN.md` - автоматичне перемикання portainer.lan на робочу ноду (keepalived / HAProxy)
 - `deploy-portainer.sh` - Скрипт автоматичного deployment
 
 ## Deployment

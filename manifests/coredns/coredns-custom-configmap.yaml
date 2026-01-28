@@ -1,0 +1,29 @@
+# ConfigMap coredns-custom для k3s: прибирає попередження в логах CoreDNS
+# "No files matching import glob pattern: /etc/coredns/custom/*.override"
+# та "No files matching import glob pattern: /etc/coredns/custom/*.server"
+#
+# k3s монтує цей ConfigMap у /etc/coredns/custom/; ключі *.override імпортуються
+# в блок :53, ключі *..server створюють додаткові server blocks.
+# Якщо ConfigMap порожній або без таких ключів — CoreDNS кожного разу логирує WARNING.
+#
+# Застосування: kubectl apply -f coredns-custom-configmap.yaml
+# Після apply CoreDNS підхопить зміни (reload); якщо ні — перезапустіть поди:
+#   kubectl rollout restart deployment coredns -n kube-system
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: coredns-custom
+  namespace: kube-system
+  labels:
+    app.kubernetes.io/name: coredns-custom
+data:
+  # Мінімальний snippet для :53 — прибирає WARNING про *.override (лог уже є в основному Corefile)
+  placeholder.override: |
+    # no extra override
+  # Мінімальний server block — прибирає WARNING про *.server (зону не використовуємо)
+  placeholder.server: |
+    dummy.local:53 {
+      log
+      forward . 1.0.0.1 8.8.8.8
+    }

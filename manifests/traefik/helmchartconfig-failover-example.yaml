@@ -1,0 +1,39 @@
+# ПРИКЛАД для failover: Traefik на двох нодах (master-node + work-node).
+# Використовуйте цей файл лише після перевірки, що на work-node є доступ до
+# Kubernetes API та Service IP (раніше було "no route to host").
+#
+# Як застосувати (замість звичайного helmchartconfig.yaml):
+# 1. Зберегти поточний helmchartconfig.yaml.
+# 2. Скопіювати цей приклад у helmchartconfig.yaml або застосувати його окремо
+#    (k3s зазвичай читає лише один HelmChartConfig з ім'ям "traefik").
+# 3. replicas: 2 і nodeAffinity на master-node + work-node — два поди Traefik.
+# 4. Далі налаштувати keepalived VIP або HAProxy згідно FAILOVER_PORTAINER_LAN.md.
+#
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: traefik
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    replicas: 2
+
+    # Запуск на master-node та work-node для failover (перевірте мережу на work-node).
+    nodeSelector: {}
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+              - master-node
+              - work-node
+
+    hostNetwork: true
+    dnsPolicy: ClusterFirstWithHostNet
+
+    ports:
+      metrics:
+        port: 9102
