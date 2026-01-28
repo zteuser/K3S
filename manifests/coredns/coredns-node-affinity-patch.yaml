@@ -1,0 +1,22 @@
+# Патч для Deployment coredns: планувати под лише на нодах, де є доступ до
+# Kubernetes API (10.43.0.1:443). На work-node поди не мають маршруту до API
+# ("no route to host") — readiness probe 503, плагін kubernetes не готовий.
+#
+# Застосування: kubectl patch deployment coredns -n kube-system --patch-file=coredns-node-affinity-patch.yaml
+#
+# Після apply под CoreDNS перезапуститься на одній з дозволених нод (master-node або macmini7).
+# Після оновлення k3s патч може зникнути — застосуйте його знову.
+---
+spec:
+  template:
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                - master-node
+                - macmini7

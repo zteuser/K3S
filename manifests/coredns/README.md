@@ -49,3 +49,45 @@ kubectl logs -n kube-system -l k8s-app=kube-dns --tail=50
 ## Про повідомлення "CPU quota undefined"
 
 Рядок **maxprocs: Leaving GOMAXPROCS=4: CPU quota undefined** означає, що контейнер CoreDNS не має CPU limit у pod spec; плагін maxprocs не може визначити квоту і залишає GOMAXPROCS за замовчуванням. Це **інформаційне** повідомлення, не помилка. Щоб прибрати його, можна задати CPU limit у Deployment CoreDNS (наприклад у HelmChartConfig для coredns), але це не обов’язково для роботи DNS.
+
+---
+
+## "No route to host" та Readiness probe failed 503
+
+**Симптоми:** Под CoreDNS на **work-node** не може доступитися до Kubernetes API (10.43.0.1:443), у логах — `dial tcp 10.43.0.1:443: connect: no route to host`, плагін `kubernetes` не готовий, **Readiness probe failed: HTTP probe failed with statuscode: 503**.
+
+**Причина:** На ноді work-node (або на її pod-network) немає маршруту до Service IP 10.43.0.1 (kubernetes.default). Це відома проблема pod-network у вашому кластері; Traefik через це теж запускали лише на master-node.
+
+**Рішення (обхід):** Планувати CoreDNS **лише на нодах, де є доступ до API** (master-node, macmini7), а не на work-node.
+
+### Крок 1: Застосувати патч nodeAffinity
+
+З каталогу `manifests/coredns`:
+
+```bash
+./apply-coredns-node-affinity.sh
+```
+
+або вручну:
+
+```bash
+kubectl patch deployment coredns -n kube-system --patch-file=manifests/coredns/coredns-node-affinity-patch.yaml
+```
+
+У патчі вказано ноди **master-node** та **macmini7**. Якщо у вас інші імена нод з доступом до API — відредагуйте `coredns-node-affinity-patch.yaml` (поле `values`).
+
+### Крок 2: Перевірити
+
+Под CoreDNS має перезапуститися і заплануватися на master-node або macmini7:
+
+```bash
+kubectl get pods -n kube-system -l k8s-app=kube-dns -o wide
+kubectl logs -n kube-system -l k8s-app=kube-dns --tail=20
+```
+
+У логах не повинно бути "no route to host"; readiness probe має стати успішною.
+
+### Важливо
+
+- Після оновлення k3s вбудований манифест CoreDNS може перезаписати Deployment — патч зникне. Застосуйте його знову після оновлення.
+- Щоб виправити мережу на work-node (доступ подів до 10.43.0.1), потрібна окрема діагностика (kube-proxy, firewall, маршрути, CNI).
