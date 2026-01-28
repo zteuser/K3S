@@ -12,6 +12,7 @@ Portainer - це легкий веб-інтерфейс для управлін�
 - **ServiceAccount**: `portainer` з ClusterRole для доступу до Kubernetes API
 - **Deployment**: 1 replica Portainer CE
 - **Service**: NodePort (порти 30900 для HTTP, 30943 для HTTPS)
+- **Ingress**: доступ через **https://portainer.lan** (Traefik, TLS) — див. `PORTAINER_INGRESS.md`
 - **Storage**: PVC з використанням OCFS2 shared storage (sharedata1)
 
 ## Передумови
@@ -33,7 +34,9 @@ Portainer - це легкий веб-інтерфейс для управлін�
 - `persistentvolumeclaim.yaml` - PVC для збереження даних Portainer
 - `deployment.yaml` - Deployment з Portainer контейнером
 - `service.yaml` - NodePort Service для доступу до Portainer
+- `ingress.yaml` - Ingress для доступу через https://portainer.lan
 - `kustomization.yaml` - Kustomize конфігурація
+- `PORTAINER_INGRESS.md` - налаштування https://portainer.lan та TLS secret
 - `deploy-portainer.sh` - Скрипт автоматичного deployment
 
 ## Deployment
