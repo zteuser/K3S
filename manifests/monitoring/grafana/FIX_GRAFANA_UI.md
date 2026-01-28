@@ -29,7 +29,27 @@
 
 3. Відкрити в браузері **http://monitoring.lan** (при потребі оновіть сторінку з пропуском кешу: Ctrl+F5).
 
-Якщо після цього з’явиться **502 Bad Gateway** або **503** — Traefik не може доступитися до Service `grafana:3000` (проблеми pod-network); тоді використовуйте доступ по NodePort (відкрийте порт 30000 на ноді, див. нижче).
+Якщо після цього з’явиться **502 Bad Gateway**, **503** або **no available server** — Traefik не може доступитися до Service `grafana:3000` (порожні endpoints або проблеми pod-network); тоді використовуйте доступ по NodePort (відкрийте порт 30000 на ноді, див. нижче).
+
+---
+
+## «No available server» на http://monitoring.lan
+
+**Симптоми:** Ingress створено (`kubectl get ingress -n monitoring` показує grafana з HOSTS monitoring.lan), але в браузері **http://monitoring.lan** показує **no available server**.
+
+**Причина:** Traefik отримує запит, але не може знайти «живий» бекенд: або у Service `grafana` немає endpoints (selector не збігається з подами), або Traefik не може доступитися до pod/Service (проблеми pod-network).
+
+**Що зробити:**
+
+1. Перевірити endpoints:
+   ```bash
+   kubectl get endpoints -n monitoring grafana
+   ```
+   Якщо порожні — переконайтеся, що под Grafana має мітку `app: grafana` і що Service має `selector: app: grafana`.
+
+2. Якщо endpoints є, але «no available server» залишається — Traefik (на ноді з hostNetwork) не може доступитися до Service IP (відома проблема pod-network у вашому кластері). **Обхід:** використовуйте доступ по **NodePort**:
+   - На ноді 10.0.10.10 відкрийте порт **30000/tcp** у фаєрволі.
+   - У браузері відкрийте **http://10.0.10.10:30000** (див. розділ «ERR_CONNECTION_REFUSED на 10.0.10.10:30000» нижче).
 
 ---
 

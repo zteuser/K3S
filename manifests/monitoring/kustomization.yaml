@@ -39,7 +39,5 @@ resources:
   - grafana/ingress.yaml
   - grafana/ingressroute.yaml
 
-# Common labels
-commonLabels:
-  managed-by: kustomize
-  part-of: monitoring-stack
+# Не використовуємо commonLabels: вони додають мітки до spec.selector у Deployment/DaemonSet,
+# а selector незмінний після створення — apply падає з "field is immutable" на вже створених ресурсах.
