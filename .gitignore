@@ -1,2 +1,6 @@
 .cursor/
 *.local
+
+# Grafana pod/container logs (exported from Portainer/kubectl)
+grafana*log
+grafana*_logs*

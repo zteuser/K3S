@@ -34,6 +34,9 @@ resources:
   - grafana/pvc.yaml
   - grafana/deployment.yaml
   - grafana/service.yaml
+  # Стандартний Ingress — k3s Traefik за замовчуванням обробляє саме Ingress (не IngressRoute CRD).
+  # Якщо monitoring.lan повертає 404, застосуйте цей манифест і перезавантажте Traefik.
+  - grafana/ingress.yaml
   - grafana/ingressroute.yaml
 
 # Common labels

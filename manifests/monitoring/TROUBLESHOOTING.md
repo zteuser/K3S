@@ -135,6 +135,20 @@ kubectl logs -n monitoring <pod-name> -c init-prometheus-dir
 
 ## Проблеми з Grafana
 
+### Графічна панель не відкривається (ERR_CONNECTION_REFUSED на 10.0.10.10:30000)
+
+**Симптоми:** Под Grafana в статусі Running, логи без помилок, але в браузері при відкритті `http://10.0.10.10:30000` — «This site can't be reached» / ERR_CONNECTION_REFUSED.
+
+**Причина:** Проблема на рівні мережі: NodePort 30000 не доступний ззовні (фаєрвол, kube-proxy) або Service не має endpoints.
+
+**Що робити:**
+
+1. Запустіть діагностику: `./grafana/CHECK_GRAFANA_ACCESS.sh`
+2. Детальні кроки та виправлення: див. **grafana/FIX_GRAFANA_UI.md**
+3. Швидкий обхід: додайте в hosts `10.0.10.10 monitoring.lan` і відкрийте **http://monitoring.lan** (доступ через Traefik Ingress).
+
+---
+
 ### Grafana не підключається до Prometheus
 
 **Симптоми:**
