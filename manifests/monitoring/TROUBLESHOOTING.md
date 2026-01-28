@@ -131,6 +131,35 @@ kubectl logs -n monitoring <pod-name> -c init-prometheus-dir
 - **Resource limits:** Перевірте, чи достатньо ресурсів на ноді
 - **Node selector:** Перевірте, чи pod може бути запланований на ноду
 
+#### lock DB directory: resource temporarily unavailable
+
+**Симптоми:** Под у `CrashLoopBackOff`, в логах:
+`err="opening storage failed: lock DB directory: resource temporarily unavailable"`. Може бути два поди Prometheus (один Running, інший CrashLoopBackOff).
+
+**Причина:** Два поди використовують один і той самий PVC з TSDB; тільки один процес може тримати блокування директорії даних.
+
+**Що робити:**
+
+1. Переконайтеся, що в deployment вказано **replicas: 1** (у `prometheus/deployment.yaml` вже 1).
+2. Якщо після rollout залишилися два ReplicaSet і два поди — залишити один под, інший прибрати:
+   ```bash
+   kubectl get pods -n monitoring -l app=prometheus -o wide
+   kubectl get rs -n monitoring -l app=prometheus
+   ```
+3. **Варіант A — rollback:** якщо працює старий под (наприклад на master-node), відкотити deployment до попередньої ревізії:
+   ```bash
+   kubectl rollout undo deployment/prometheus -n monitoring
+   ```
+4. **Варіант B — один под:** примусово один репліка, потім видалити падаючий под за ім'ям (той, що в CrashLoopBackOff) — залишиться один Running под:
+   ```bash
+   kubectl scale deployment/prometheus -n monitoring --replicas=1
+   kubectl delete pod -n monitoring prometheus-5bfc869568-8b9fw   # замініть на ім'я падаючого пода
+   ```
+5. Перевірити, що залишився один Running под:
+   ```bash
+   kubectl get pods -n monitoring -l app=prometheus
+   ```
+
 ---
 
 ## Проблеми з Grafana
