@@ -211,6 +211,34 @@ PVC не підключений або має неправильні права.
 
 ## Проблеми з Node Exporter
 
+### node-exporter не запускається на master-node (Global 2 / 3)
+
+**Симптоми:** DaemonSet node-exporter показує **Global 2 / 3** — один под не запланувався на master-node (control-plane).
+
+**Причина:** На master-node за замовчуванням стоїть taint (наприклад `node-role.kubernetes.io/control-plane:NoSchedule`), через що звичайні поди туди не плануються. У DaemonSet мають бути відповідні **tolerations**.
+
+**Що зробити:**
+
+1. Застосувати оновлений DaemonSet (у манифест уже додано tolerations для control-plane/master):
+   ```bash
+   kubectl apply -f node-exporter/daemonset.yaml
+   ```
+   або з каталогу `manifests/monitoring`: `kubectl apply -k .`
+
+2. Перевірити, що под з’явився на master-node:
+   ```bash
+   kubectl get pods -n monitoring -l app=node-exporter -o wide
+   ```
+   Має бути три поди — по одному на кожній ноді (включно з master-node).
+
+3. Якщо под все ще не з’являється — перевірити taint на master-node:
+   ```bash
+   kubectl describe node master-node | grep -A5 Taints
+   ```
+   Якщо там інший ключ/значення, додайте відповідний toleration у `node-exporter/daemonset.yaml`.
+
+---
+
 ### Node Exporter не збирає метрики
 
 **Симптоми:**

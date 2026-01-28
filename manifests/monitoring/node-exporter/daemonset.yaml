@@ -56,5 +56,12 @@ spec:
         hostPath:
           path: /
       tolerations:
+      # Дозволити запуск на master/control-plane нодах (k3s за замовчуванням ставить taint)
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: NoSchedule
       - effect: NoSchedule
         operator: Exists
