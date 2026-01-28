@@ -21,13 +21,18 @@
 # Мають повертати рядки (не порожній результат)
 up{job="node-exporter"}
 up{job="kube-state-metrics"}
-kube_node_info
-kube_node_status_capacity
+kube_pod_info
+# kube-state-metrics v2 — allocatable/capacity з лейблом resource (не _cpu_cores / _pods)
+kube_node_status_allocatable{resource="cpu"}
+kube_node_status_allocatable{resource="pods"}
+kube_node_status_capacity{resource="cpu"}
 node_cpu_seconds_total{mode="idle"}
 node_memory_MemTotal_bytes
 ```
 
-Якщо **всі запити повертають дані** — Prometheus збирає метрики, проблема в дашборді або змінних.
+**Важливо:** Дашборди під v1 шукають метрики `kube_node_status_allocatable_cpu_cores`, `kube_node_status_allocatable_pods` — у **v2 цих назв немає**, тому ці запити будуть порожні. У v2 використовуються `kube_node_status_allocatable{resource="cpu"}`, `kube_node_status_allocatable{resource="pods"}` тощо. Якщо ці (v2) запити повертають дані — Prometheus збирає все правильно, проблема лише в тому, що дашборд розрахований на v1.
+
+Якщо **всі запити (v2) повертають дані** — Prometheus збирає метрики, проблема в дашборді (потрібен дашборд 16520 або зміна запитів на v2).
 
 Якщо **деякі порожні** — перевірте відповідний target (kube-state-metrics / node-exporter) і конфіг Prometheus.
 
@@ -46,6 +51,14 @@ node_memory_MemTotal_bytes
 ## Крок 3: Дашборд сумісний з kube-state-metrics v2
 
 Дашборд **"Kubernetes Cluster (Prometheus)"** (часто імпортований з Grafana.com, ID 7249) був зроблений під **kube-state-metrics v1**. У вас **v2.10.1** — метрики та лейбли відрізняються, тому панелі можуть показувати "No data".
+
+| v1 (дашборд 7249) | v2 (у вашому кластері) |
+|-------------------|-------------------------|
+| `kube_node_status_allocatable_cpu_cores` | `kube_node_status_allocatable{resource="cpu"}` |
+| `kube_node_status_allocatable_pods` | `kube_node_status_allocatable{resource="pods"}` |
+| `kube_node_status_capacity_*` | `kube_node_status_capacity{resource="..."}` |
+
+Якщо в Prometheus `kube_pod_info` є, а `kube_node_status_allocatable_pods` і `kube_node_status_allocatable_cpu_cores` — порожні, це очікувано: у v2 такі метрики не експортуються, використовуйте запити вище або дашборд 16520.
 
 **Варіант A: Імпортувати дашборд під v2**
 
