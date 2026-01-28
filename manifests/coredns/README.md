@@ -1,3 +1,25 @@
+# CoreDNS у k3s
+
+## Тест резолву hostname (DNS)
+
+Перевірити, як CoreDNS резолвить внутрішні та зовнішні імена:
+
+```bash
+cd manifests/coredns
+sudo ./test-coredns-resolve.sh
+```
+
+Скрипт запускає тимчасовий pod і виконує **nslookup** для:
+- `kubernetes.default.svc.cluster.local` (Kubernetes API)
+- `kube-dns.kube-system.svc.cluster.local` (CoreDNS)
+- `kubernetes` (коротке ім'я)
+- `google.com` (зовнішній hostname)
+- `prometheus.monitoring.svc.cluster.local` (якщо є namespace monitoring)
+
+Очікується: кожен nslookup повертає відповідь (Address / Name). Якщо є timeout або "can't resolve" — перевірте, що под CoreDNS Running і що pod-и мають доступ до kube-dns (10.43.0.10:53).
+
+---
+
 # Виправлення логів CoreDNS (No files matching import glob pattern)
 
 ## Проблема
