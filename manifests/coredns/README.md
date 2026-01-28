@@ -12,7 +12,7 @@ sudo ./test-coredns-resolve.sh
 Скрипт запускає тимчасовий pod і виконує **nslookup** для:
 - `kubernetes.default.svc.cluster.local` (Kubernetes API)
 - `kube-dns.kube-system.svc.cluster.local` (CoreDNS)
-- `kubernetes` (коротке ім'я)
+- `kubernetes` (коротке ім'я; тестовий pod у default, щоб це ім'я резолвилось)
 - `google.com` (зовнішній hostname)
 - `prometheus.monitoring.svc.cluster.local` (якщо є namespace monitoring)
 

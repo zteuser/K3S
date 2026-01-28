@@ -3,7 +3,8 @@
 # Запускає тимчасовий pod і виконує nslookup для внутрішніх та зовнішніх імен.
 # Запуск: sudo ./test-coredns-resolve.sh   (якщо потрібен sudo для kubectl)
 set -e
-NAMESPACE="${NAMESPACE:-kube-system}"
+# default namespace — щоб коротке ім'я "kubernetes" резолвилось (сервіс у default)
+NAMESPACE="${NAMESPACE:-default}"
 IMAGE="${IMAGE:-busybox:1.36}"
 
 echo "=== CoreDNS resolve test ==="
@@ -25,7 +26,7 @@ kubectl run dns-test-resolve --rm -i --restart=Never -n "$NAMESPACE" --image="$I
   echo "2. kube-dns.kube-system.svc.cluster.local (CoreDNS):"
   nslookup kube-dns.kube-system.svc.cluster.local
   echo ""
-  echo "3. kubernetes (short name in default):"
+  echo "3. kubernetes (short name — працює лише з namespace default):"
   nslookup kubernetes
   echo ""
   echo "4. google.com (external):"
