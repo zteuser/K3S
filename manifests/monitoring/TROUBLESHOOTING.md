@@ -246,6 +246,22 @@ PVC не підключений або має неправильні права.
    kubectl apply -f node-exporter/daemonset.yaml
    ```
 
+5. Якщо Events показують **"1 node(s) didn't have free ports for the requested pod ports"** і **"2 node(s) didn't satisfy plugin(s) [NodeAffinity]"** — єдиний кандидат для пода (master-node) **не має вільного порту 9100**. З `hostNetwork: true` node-exporter слухає на порту **9100** на хості; якщо на master-node цей порт уже зайнятий, под не запланується.
+   - **На master-node** перевірити, хто слухає 9100:
+     ```bash
+     ss -tlnp | grep 9100
+     # або
+     sudo lsof -i :9100
+     ```
+   - **Якщо порт займає Traefik** (на master-node Traefik з `hostNetwork: true` за замовчуванням слухає метрики на 9100):
+     - У репозиторії в `manifests/traefik/helmchartconfig.yaml` додано зміну порту метрик Traefik з **9100** на **9102**. Застосуйте оновлений HelmChartConfig, потім перезапустіть Traefik, щоб він звільнив 9100:
+       ```bash
+       kubectl apply -f manifests/traefik/helmchartconfig.yaml
+       kubectl rollout restart deployment traefik -n kube-system
+       ```
+     - Після перезапуску Traefik слухатиме метрики на **9102**; порт 9100 на master-node буде вільний, і под node-exporter запланується. Якщо Prometheus збирає метрики Traefik — оновіть job на порт 9102 для master-node.
+   - **Якщо порт займає інший процес** — зупиніть його (наприклад `systemctl stop node_exporter`) або переналаштуйте на інший порт. Після звільнення 9100 под node-exporter запланується сам.
+
 ---
 
 ### Node Exporter не збирає метрики

@@ -16,3 +16,9 @@ spec:
     # використовував мережевий стек хоста (де kube-proxy правила для Service IP працюють).
     hostNetwork: true
     dnsPolicy: ClusterFirstWithHostNet
+
+    # Порт метрик Traefik змінюємо з 9100 на 9102, щоб на master-node (hostNetwork) порт 9100
+    # був вільний для node-exporter (інакше под node-exporter не планується: "didn't have free ports").
+    ports:
+      metrics:
+        port: 9102
