@@ -55,7 +55,8 @@ data:
 
       - job_name: 'kube-state-metrics'
         static_configs:
-          - targets: ['10.42.2.24:8080']
+          # Service замість статичної IP пода — target залишається UP після перезапуску пода
+          - targets: ['kube-state-metrics.monitoring.svc.cluster.local:8080']
         scrape_interval: 30s
         scrape_timeout: 20s
 

@@ -149,6 +149,16 @@ kubectl logs -n monitoring <pod-name> -c init-prometheus-dir
 
 ---
 
+### No data / N/A на дашборді "Kubernetes Cluster (Prometheus)" при UP targets
+
+**Симптоми:** У Prometheus усі targets UP, але дашборд "Kubernetes Cluster (Prometheus)" показує N/A для Usage і "No data" для Capacity (CPU, Memory, Disk).
+
+**Причина:** Дашборд часто розрахований на kube-state-metrics v1 або змінна $node не збігається з лейблами метрик (node-exporter використовує `instance`, а не ім'я ноди).
+
+**Що робити:** Детальні кроки та виправлення — див. **FIX_KUBERNETES_CLUSTER_DASHBOARD.md**. Коротко: перевірити метрики в Prometheus, datasource у Grafana; імпортувати дашборд **16520** (Kube-state-metrics v2) або виправити змінні/запити на поточному дашборді.
+
+---
+
 ### Grafana не підключається до Prometheus
 
 **Симптоми:**
