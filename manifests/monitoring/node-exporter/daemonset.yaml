@@ -32,9 +32,9 @@ spec:
           requests:
             memory: "50Mi"
             cpu: "50m"
+          # Не ставимо CPU limit, щоб под міг заплануватися на ноди з 100% CPU limits (напр. master-node).
           limits:
             memory: "100Mi"
-            cpu: "200m"
         volumeMounts:
         - name: proc
           mountPath: /host/proc

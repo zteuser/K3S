@@ -237,6 +237,15 @@ PVC не підключений або має неправильні права.
    ```
    Якщо там інший ключ/значення, додайте відповідний toleration у `node-exporter/daemonset.yaml`.
 
+4. Якщо под у статусі **Pending**, NODE `<none>`, а на master-node **Taints: &lt;none&gt;** — ймовірно scheduler не ставить под через **ресурси**. На master-node часто вже 100% CPU limits (2 cores). Перевірити причину:
+   ```bash
+   kubectl describe pod -n monitoring -l app=node-exporter | grep -A20 "Events:"
+   ```
+   Якщо там "Insufficient cpu" або подібне — у DaemonSet прибрано CPU limit у node-exporter, щоб под міг заплануватися. Застосуйте оновлений манифест:
+   ```bash
+   kubectl apply -f node-exporter/daemonset.yaml
+   ```
+
 ---
 
 ### Node Exporter не збирає метрики
