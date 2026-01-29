@@ -17,9 +17,9 @@ spec:
     spec:
       dnsPolicy: ClusterFirst
       serviceAccountName: prometheus
-      # If DNS works only on a specific node in your cluster, you can pin Prometheus there:
-      # nodeSelector:
-      #   kubernetes.io/hostname: macmini7
+      # Планувати на ноді, де працює DNS/API (на work-node буває "no route to host" до CoreDNS/API)
+      nodeSelector:
+        kubernetes.io/hostname: master-node
       # Security context для правильних прав доступу до volume
       securityContext:
         fsGroup: 65534  # nobody group - автоматично встановить права на volume

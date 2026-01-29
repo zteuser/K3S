@@ -153,9 +153,10 @@ kubectl logs -n monitoring <pod-name> -c init-prometheus-dir
 4. **Варіант B — один под:** примусово один репліка, потім видалити падаючий под за ім'ям (той, що в CrashLoopBackOff) — залишиться один Running под:
    ```bash
    kubectl scale deployment/prometheus -n monitoring --replicas=1
-   kubectl delete pod -n monitoring prometheus-5bfc869568-8b9fw   # замініть на ім'я падаючого пода
+   kubectl delete pod -n monitoring prometheus-58674c969-9bhcs   # замініть на ім'я падаючого пода
    ```
-5. Перевірити, що залишився один Running под:
+5. **Щоб уникнути повторення:** після зміни ConfigMap Prometheus **не** використовуйте `rollout restart` — він створює новий под до завершення старого, обидва тримають один PVC і виникає lock. Замість цього застосуйте ConfigMap і **перезапустіть лише под:** `kubectl delete pod -n monitoring -l app=prometheus`. Deployment створить один новий под з оновленим конфігом.
+6. Перевірити, що залишився один Running под:
    ```bash
    kubectl get pods -n monitoring -l app=prometheus
    ```

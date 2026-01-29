@@ -34,6 +34,21 @@ container_memory_usage_bytes
 
 Якщо **немає даних** при UP target — перевірте, чи не відфільтровані метрики (metric_relabel_configs), і чи правильний scrape path (`/metrics/cadvisor`).
 
+## Якщо cadvisor і kube-state-metrics обидва DOWN (DNS timeout)
+
+**Помилки в Targets:** `lookup kubernetes.default.svc on 10.43.0.10:53: i/o timeout` та `context deadline exceeded` для kube-state-metrics.
+
+**Причина:** Под Prometheus запланований на ноду (наприклад work-node), з якої немає маршруту до CoreDNS/API, тому DNS не відповідає вчасно.
+
+**Що зробити:**
+
+1. **Прив’язати Prometheus до ноди, де працює DNS:** у `prometheus/deployment.yaml` додати (або розкоментувати) `nodeSelector: kubernetes.io/hostname: master-node` (або `macmini7`, якщо CoreDNS там). Після apply і перезапуску пода Prometheus буде на master-node/macmini7 і targets стануть UP.
+2. **Повний FQDN для API:** у `prometheus/configmap.yaml` у job cadvisor для `__address__` використовувати `kubernetes.default.svc.cluster.local:443` замість `kubernetes.default.svc:443`.
+
+У репозиторії вже застосовано обидва варіанти (nodeSelector master-node і FQDN у configmap).
+
+---
+
 ## Крок 3: Якщо target cadvisor DOWN — виправити scrape
 
 Поточна конфігурація в `prometheus/configmap.yaml` скрапить kubelet **напряму** по IP (`https://10.0.10.10:10250/metrics/cadvisor` тощо) з bearer token. У k3s kubelet може не приймати цей token при прямому з’єднанні, тому краще використовувати **API server proxy**: Prometheus звертається до API сервера, який проксує запити до kubelet (RBAC у вас уже є: `nodes/proxy` для Prometheus).
