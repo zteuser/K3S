@@ -60,7 +60,13 @@ container_memory_usage_bytes
    - Змінні дашборду: **namespace** = All або конкретний, **pod** = All.  
    - Натисніть **Refresh** (або збережіть дашборд із новим часом).
 
-3. **Якщо в Prometheus метрик container_* немає**  
+3. **Змінні дашборду (cluster, namespace, pod)**  
+   Dashboard settings → **Variables**. Якщо панелі все ще "No data" при запиті з `namespace=~"$namespace"`, `pod=~"$pod"`:
+   - **cluster:** якщо за замовчуванням "None" і в метриках немає лейбла `cluster`, то `cluster=~"$cluster"` нічого не матчить. Додайте опцію **All** зі значенням **`.*`** і поставте її за замовчуванням, або змініть запити змінних так, щоб при "None" використовувався regex ".*".
+   - **namespace:** Definition має бути `label_values(kube_pod_container_info{cluster=~"$cluster"}, namespace)` (або з метрики cadvisor: `label_values(container_cpu_usage_seconds_total{cluster=~"$cluster"}, namespace)`). Обов’язково **Include All option** зі значенням **`.*`**.
+   - **pod:** Definition має повертати список подів, наприклад `label_values(kube_pod_container_info{cluster=~"$cluster", namespace=~"$namespace"}, pod)` або `label_values(container_cpu_usage_seconds_total{cluster=~"$cluster", namespace=~"$namespace"}, pod)`. **Не** лишати просто `kube_pod_container_info`. **Include All option** зі значенням **`.*`**.
+
+4. **Якщо в Prometheus метрик container_* немає**  
    Можливо, k3s/kubelet віддає інші назви. Відкрийте в Prometheus **Graph** і введіть `{job="cadvisor"}` — перегляньте список метрик. Якщо є метрики на кшталт `container_cpu_usage_seconds_total` з іншими лейблами (наприклад, `pod` замість `pod_name`), дашборд 16520 може їх не знаходити — тоді потрібно або змінити запити в панелях дашборду під ваші лейбли, або використати інший дашборд, що підтримує ваш формат метрик.
 
 ## Якщо cadvisor і kube-state-metrics обидва DOWN (DNS timeout)
