@@ -188,6 +188,16 @@ kubectl logs -n monitoring <pod-name> -c init-prometheus-dir
 
 ---
 
+### No data у розділі Pods дашборду kube-state-metrics-v2
+
+**Симптоми:** У розділі **Pods** дашборду kube-state-metrics-v2 усі панелі (Container CPU/Memory Usage %, Container File Descriptors, Container FS Usage %) показують "No data".
+
+**Причина:** Ці панелі використовують метрики **cAdvisor** (контейнерне CPU/пам’ять у реальному часі), а не kube-state-metrics. Якщо target **cadvisor** у Prometheus DOWN або метрик немає — даних не буде.
+
+**Що робити:** Див. **FIX_PODS_SECTION_NO_DATA.md**. Коротко: перевірити Prometheus → Targets → cadvisor (має бути UP); якщо DOWN — у `prometheus/configmap.yaml` використано scrape cAdvisor через API server proxy; після apply ConfigMap і restart Prometheus перевірити Targets і дашборд.
+
+---
+
 ### Grafana не підключається до Prometheus
 
 **Симптоми:**
