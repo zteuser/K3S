@@ -30,9 +30,32 @@ container_cpu_usage_seconds_total
 container_memory_usage_bytes
 ```
 
-Якщо **є дані** — проблема може бути у часі/фільтрах дашборду або в іменах метрик (нові версії kubelet іноді змінюють назви). Спробуйте змінити time range на "Last 15 minutes" і оновити дашборд.
+Якщо **є дані** — проблема у дашборді або часі. Див. нижче «Targets UP, але Pods все ще No data».
 
 Якщо **немає даних** при UP target — перевірте, чи не відфільтровані метрики (metric_relabel_configs), і чи правильний scrape path (`/metrics/cadvisor`).
+
+---
+
+## Targets UP, але розділ Pods все ще "No data"
+
+Якщо **cadvisor (3/3 up)** і **kube-state-metrics (1/1 up)**, а панелі Pods порожні:
+
+1. **Перевірити метрики в Prometheus**  
+   Prometheus → **Graph**, виконайте:
+   ```promql
+   container_cpu_usage_seconds_total
+   container_memory_usage_bytes
+   ```
+   - Якщо **є рядки** — дані є; проблема в часі або в запитах дашборду. Спробуйте в Grafana: **Last 15 minutes** або **Last 1 hour**, оновити дашборд (Refresh). Перевірте змінні дашборду (namespace, pod) — якщо вибрано невідповідне значення, панелі можуть бути порожні.
+   - Якщо **немає рядків** — у вашій версії kubelet/cAdvisor метрики можуть мати інші назви (наприклад, з іншим префіксом або лейблами). У Prometheus → Graph спробуйте: `{job="cadvisor"}` або `container_` — подивіться, які метрики з job=cadvisor реально є, і порівняйте з тим, що очікує дашборд.
+
+2. **Час і змінні в Grafana**  
+   - Виберіть **Last 15 minutes** або **Last 1 hour**.  
+   - Змінні дашборду: **namespace** = All або конкретний, **pod** = All.  
+   - Натисніть **Refresh** (або збережіть дашборд із новим часом).
+
+3. **Якщо в Prometheus метрик container_* немає**  
+   Можливо, k3s/kubelet віддає інші назви. Відкрийте в Prometheus **Graph** і введіть `{job="cadvisor"}` — перегляньте список метрик. Якщо є метрики на кшталт `container_cpu_usage_seconds_total` з іншими лейблами (наприклад, `pod` замість `pod_name`), дашборд 16520 може їх не знаходити — тоді потрібно або змінити запити в панелях дашборду під ваші лейбли, або використати інший дашборд, що підтримує ваш формат метрик.
 
 ## Якщо cadvisor і kube-state-metrics обидва DOWN (DNS timeout)
 
