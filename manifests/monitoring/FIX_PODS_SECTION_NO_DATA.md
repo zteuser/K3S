@@ -46,7 +46,13 @@ container_memory_usage_bytes
    container_cpu_usage_seconds_total
    container_memory_usage_bytes
    ```
-   - Якщо **є рядки** — дані є; проблема в часі або в запитах дашборду. Спробуйте в Grafana: **Last 15 minutes** або **Last 1 hour**, оновити дашборд (Refresh). Перевірте змінні дашборду (namespace, pod) — якщо вибрано невідповідне значення, панелі можуть бути порожні.
+   - Якщо **є рядки** (як у вас — 66 серій для container_cpu_usage_seconds_total) — дані є; проблема в часі або в запитах/змінних дашборду. Зробіть у Grafana:
+     - Час: **Last 15 minutes** або **Last 1 hour** (не "Last 5 minutes").
+     - Змінні: **namespace** = All, **pod** = All (або **Refresh** змінних).
+     - Натисніть **Refresh** дашборду.
+     - Якщо все ще "No data" — відкрийте панель → **Inspect** → **Query** і подивіться виконаний запит. Часті помилки в дашборді 16520:
+       - **namespace:** у запиті може бути `namespace="(kube-system|monitoring|portainer)"` — з `=` це буквальний рядок, тому 0 рядків. Має бути **regex:** `namespace=~"kube-system|monitoring|portainer"`.
+       - **pod=~"()"** — порожній regex не матчить жодного пода. Для "All" має бути `pod=~".+"` або цей фільтр прибрати. Виправте запит у панелі (Edit panel → Query) і збережіть дашборд.
    - Якщо **немає рядків** — у вашій версії kubelet/cAdvisor метрики можуть мати інші назви (наприклад, з іншим префіксом або лейблами). У Prometheus → Graph спробуйте: `{job="cadvisor"}` або `container_` — подивіться, які метрики з job=cadvisor реально є, і порівняйте з тим, що очікує дашборд.
 
 2. **Час і змінні в Grafana**  
