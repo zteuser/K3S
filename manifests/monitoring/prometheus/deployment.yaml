@@ -7,6 +7,9 @@ metadata:
     app: prometheus
 spec:
   replicas: 1
+  # Recreate: спочатку завершити старий под, потім створити новий — один PVC, один процес TSDB
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: prometheus
