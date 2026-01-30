@@ -16,6 +16,9 @@ data:
 
     clients:
       - url: http://loki:3100/loki/api/v1/push
+        # Збільшений таймаут: Loki може повільно відповідати під навантаженням або між нодами
+        timeout: 30s
+        batchwait: 2s
 
     scrape_configs:
       # Логи контейнерів з /var/log/pods (Kubernetes service discovery)

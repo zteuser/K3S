@@ -39,3 +39,11 @@ kubectl -n monitoring logs -l app=promtail --tail=30
 ```
 
 У Grafana Explore (Loki) через кілька хвилин мають з’явитися логи за мітками `namespace`, `pod`, `container`, `job=journal`, `unit`.
+
+## Якщо Promtail показує "context deadline exceeded" при POST до Loki
+
+1. **Таймаут клієнта:** у конфігу встановлено `timeout: 30s` і `batchwait: 2s`. Після оновлення ConfigMap перезапустіть поди: `kubectl -n monitoring apply -f manifests/monitoring/promtail/configmap.yaml` і `kubectl -n monitoring delete pod -l app=promtail`.
+
+2. **DNS/мережа між нодами:** якщо Loki на одній ноді, а Promtail на інших — спробуйте URL через ClusterIP: `kubectl -n monitoring get svc loki -o wide`, потім у ConfigMap змініть `url` на `http://<ClusterIP>:3100/loki/api/v1/push`.
+
+3. **Навантаження на Loki:** перевірте `kubectl -n monitoring logs -l app=loki --tail=50`; при потребі збільште ресурси або retention у Loki.
