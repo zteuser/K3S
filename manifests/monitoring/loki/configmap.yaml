@@ -36,8 +36,6 @@ data:
 
     limits_config:
       retention_period: 168h   # 7 днів
-      metric_aggregation_enabled: true
-      enable_multi_variant_queries: true
 
     schema_config:
       configs:
