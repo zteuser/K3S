@@ -42,12 +42,15 @@ kubectl -n monitoring logs -l app=loki --tail=20
 
 Як переглядати логи:
 1. Відкрийте **Explore** (іконка компаса зліва) → виберіть datasource **Loki**.
-2. У полі запиту можна використовувати **LogQL**, наприклад:
+2. **Режим Code (рекомендовано):** натисніть **Code** праворуч у панелі запиту й уведіть LogQL у полі, наприклад:
    - `{namespace="monitoring"}` — логи з namespace monitoring
    - `{namespace="kube-system"}` — системні логи
    - `{app="loki"}` — логи самого Loki
-   - `{pod=~"prometheus.*"}` — логи подів, ім’я яких починається з prometheus
-3. Натисніть **Run query**. Для потокових логів увімкніть **Live** (якщо підтримується).
+   - `{pod=~"prometheus.+"}` — логи подів, ім’я яких містить prometheus (у LogQL потрібен хоча б один непорожній матчер, тому краще `.+` замість `.*`).
+3. **Режим Builder:** у блоці **Label filters** оберіть **Select label** → `namespace`, **Select value** → `monitoring`. Не вводьте `{namespace="monitoring"}` у поле **Line contains** — це фільтр по тексту рядка, а не по мітці; порожній селектор `{}` викликає помилку.
+4. Натисніть **Run query**. Для потокових логів увімкніть **Live** (якщо підтримується).
+
+**Якщо показує «No logs found»:** Loki сам логів не збирає. Щоб у Explore з’явилися логи подів і нод, потрібно розгорнути **Promtail** (DaemonSet), який читає логи з нод і відправляє їх у Loki. План і кроки — у `manifests/logging/LOGGING_PLAN.md` (Фаза 3: Promtail).
 
 ## Якщо PVC лишається Pending після створення PV
 
