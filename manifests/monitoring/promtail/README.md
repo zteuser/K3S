@@ -7,6 +7,10 @@ DaemonSet на кожній ноді: збирає логи контейнері
 - **kubernetes-pods:** логи всіх контейнерів (namespace, pod, container, node) з `/var/log/pods`.
 - **journal:** логи systemd (k3s, k3s-agent тощо) з мітками `job=journal`, `unit`, `nodename`.
 
+## Планування на нодах
+
+За замовчуванням Promtail планується **лише на master-node** (nodeSelector), бо на worker-нодах часто немає маршруту до API (10.43.0.1) та Loki — виникають "no route to host" і "context deadline exceeded". Loki теж на master-node. Логи збираються з master-node (поди + journal). Щоб збирати логи з усіх нод — налаштуйте доступ до ClusterIP з worker-нод за інструкцією **`manifests/FIX_CLUSTERIP_ACCESS_FROM_ALL_NODES.md`**, потім приберіть nodeSelector з DaemonSet.
+
 ## Вимоги на нодах
 
 - Каталог `/var/log/pods` (стандартний шлях логів подів у k3s).

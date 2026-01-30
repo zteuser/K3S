@@ -112,4 +112,4 @@ kubectl logs -n kube-system -l k8s-app=kube-dns --tail=20
 ### Важливо
 
 - Після оновлення k3s вбудований манифест CoreDNS може перезаписати Deployment — патч зникне. Застосуйте його знову після оновлення.
-- Щоб виправити мережу на work-node (доступ подів до 10.43.0.1), потрібна окрема діагностика (kube-proxy, firewall, маршрути, CNI).
+- Щоб виправити мережу на work-node (доступ подів до 10.43.0.1), див. **`manifests/FIX_CLUSTERIP_ACCESS_FROM_ALL_NODES.md`** — кроки для firewall (firewalld/iptables) та перевірки.
