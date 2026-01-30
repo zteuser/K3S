@@ -58,7 +58,7 @@ data:
       rule_path: /loki/rules
       alertmanager_url: http://localhost:9093
       storage:
-        type: filesystem
+        type: local
 
     frontend:
       encoding: protobuf
