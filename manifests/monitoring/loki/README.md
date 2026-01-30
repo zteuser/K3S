@@ -39,3 +39,13 @@ kubectl -n monitoring logs -l app=loki --tail=20
 ```
 
 Grafana: додати datasource **Loki**, URL: `http://loki:3100` (в тому ж namespace `monitoring`).
+
+## Якщо PVC лишається Pending після створення PV
+
+При `volumeBindingMode: WaitForFirstConsumer` PVC прив’язується до PV, коли под, який його використовує, планується на ноду. Після того як PV з’явився, перезапустіть под Loki — scheduler і volume binder знову спробують прив’язати PVC і запланувати под:
+
+```bash
+kubectl -n monitoring delete pod -l app=loki
+```
+
+Потім перевірте: `kubectl get pv pv-loki-10gi` (STATUS має бути Bound), `kubectl -n monitoring get pvc loki-data`, `kubectl -n monitoring get pods -l app=loki`.
