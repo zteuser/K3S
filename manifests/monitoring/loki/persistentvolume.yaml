@@ -1,0 +1,31 @@
+# PV для Loki (10 ГіБ). Потрібен для прив'язки PVC loki-data, коли StorageClass ocfs2-shared
+# має provisioner: kubernetes.io/no-provisioner.
+#
+# Використовується піддиректорія на існуючому OCFS2 share: /sharedata1/loki
+# На ноді (master-node/work-node) має бути змонтовано /sharedata1 (або створіть каталог вручну).
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-loki-10gi
+  labels:
+    type: ocfs2
+    app: loki
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ocfs2-shared
+  hostPath:
+    path: /sharedata1/loki
+    type: DirectoryOrCreate
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - master-node
+          - work-node

@@ -8,7 +8,7 @@ Loki деплоїться в **namespace `monitoring`** поруч з Prometheus
 - **Розмір:** 10 ГіБ
 - **StorageClass:** `ocfs2-shared` (файл `manifests/storage/storageclass-ocfs2.yaml`)
 
-Якщо використовується no-provisioner (OCFS2), перед деплоєм потрібно створити **PV на 10 ГіБ** з `storageClassName: ocfs2-shared`, або мати dynamic provisioning для цього storage class.
+Для no-provisioner (OCFS2) у репозиторії є **PV** `manifests/monitoring/loki/persistentvolume.yaml` (10 ГіБ, шлях `/sharedata1/loki` на нодах master-node/work-node). Застосуйте його **перед** PVC: `kubectl apply -f manifests/monitoring/loki/persistentvolume.yaml`.
 
 ## Деплой
 
@@ -21,6 +21,9 @@ kubectl apply -k manifests/monitoring
 Або окремо:
 
 ```bash
+# 1. PV (щоб PVC міг прив'язатися)
+kubectl apply -f manifests/monitoring/loki/persistentvolume.yaml
+# 2. Решта
 kubectl apply -f manifests/monitoring/loki/pvc.yaml
 kubectl apply -f manifests/monitoring/loki/configmap.yaml
 kubectl apply -f manifests/monitoring/loki/deployment.yaml

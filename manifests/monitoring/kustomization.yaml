@@ -40,6 +40,7 @@ resources:
   - grafana/ingressroute.yaml
 
   # Loki (логи) — namespace monitoring, окремий volume 10Gi ocfs2-shared
+  - loki/persistentvolume.yaml
   - loki/pvc.yaml
   - loki/configmap.yaml
   - loki/deployment.yaml
