@@ -16,6 +16,7 @@
 1. OCFS2 вже налаштований на рівні ОС на нодах master-node та work-node
 2. OCFS2 volumes змонтовані в `/sharedata1` та `/sharedata2`
 3. Перевірка статусу OCFS2:
+
    ```bash
    # На нодах master-node та work-node
    o2cb cluster-status
@@ -38,6 +39,7 @@
 ### 1. Налаштування маніфестів
 
 Маніфести вже налаштовані з правильними параметрами:
+
 - **Розмір storage**: 45Gi для кожного volume (5Gi залишається для системи)
 - **Шляхи до mount points**: `/sharedata1` та `/sharedata2`
 - **Ноди**: master-node та work-node
@@ -170,6 +172,7 @@ spec:
 4. **StorageClass**: Використовується `kubernetes.io/no-provisioner` з `WaitForFirstConsumer`, що означає що PV створюються вручну.
 
 5. **Перевірка перед deployment**: Завжди перевіряйте OCFS2 статус перед deployment:
+
    ```bash
    o2cb cluster-status
    o2cb list-nodes ocfscluster
@@ -242,4 +245,3 @@ kubectl delete storageclass ocfs2-shared
 - [K3s Documentation](https://docs.k3s.io/)
 - [Kubernetes PersistentVolumes](https://kubernetes.io/docs/concepts/storage/persistent-volumes/)
 - [OCFS2 Documentation](https://oss.oracle.com/projects/ocfs2/)
-

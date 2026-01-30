@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: loki-data
+  namespace: monitoring
+  labels:
+    app: loki
+spec:
+  accessModes:
+    - ReadWriteMany  # OCFS2 підтримує ReadWriteMany (RWX)
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: ocfs2-shared  # storageclass-ocfs2 (файл storageclass-ocfs2.yaml)
