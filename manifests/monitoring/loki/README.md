@@ -38,7 +38,16 @@ kubectl -n monitoring get svc loki
 kubectl -n monitoring logs -l app=loki --tail=20
 ```
 
-Grafana: додати datasource **Loki**, URL: `http://loki:3100` (в тому ж namespace `monitoring`).
+**Логи в Grafana:** datasource **Loki** додано в `configmap-datasources.yaml` (URL: `http://loki:3100`). Після застосування ConfigMap перезапустіть Grafana, щоб підхопити новий datasource.
+
+Як переглядати логи:
+1. Відкрийте **Explore** (іконка компаса зліва) → виберіть datasource **Loki**.
+2. У полі запиту можна використовувати **LogQL**, наприклад:
+   - `{namespace="monitoring"}` — логи з namespace monitoring
+   - `{namespace="kube-system"}` — системні логи
+   - `{app="loki"}` — логи самого Loki
+   - `{pod=~"prometheus.*"}` — логи подів, ім’я яких починається з prometheus
+3. Натисніть **Run query**. Для потокових логів увімкніть **Live** (якщо підтримується).
 
 ## Якщо PVC лишається Pending після створення PV
 
