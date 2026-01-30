@@ -1,0 +1,41 @@
+# Promtail (Фаза 3 з LOGGING_PLAN)
+
+DaemonSet на кожній ноді: збирає логи контейнерів з `/var/log/pods` та логи systemd journal з `/var/log/journal`, відправляє в Loki.
+
+## Що збирається
+
+- **kubernetes-pods:** логи всіх контейнерів (namespace, pod, container, node) з `/var/log/pods`.
+- **journal:** логи systemd (k3s, k3s-agent тощо) з мітками `job=journal`, `unit`, `nodename`.
+
+## Вимоги на нодах
+
+- Каталог `/var/log/pods` (стандартний шлях логів подів у k3s).
+- Каталог `/var/log/journal` (journald, для логів k3s).
+- Файл `/etc/machine-id` (для читання journal).
+
+## Деплой
+
+Разом з усім monitoring stack:
+
+```bash
+kubectl apply -k manifests/monitoring
+```
+
+Або окремо:
+
+```bash
+kubectl apply -f manifests/monitoring/promtail/serviceaccount.yaml
+kubectl apply -f manifests/monitoring/promtail/clusterrole.yaml
+kubectl apply -f manifests/monitoring/promtail/clusterrolebinding.yaml
+kubectl apply -f manifests/monitoring/promtail/configmap.yaml
+kubectl apply -f manifests/monitoring/promtail/daemonset.yaml
+```
+
+## Перевірка
+
+```bash
+kubectl -n monitoring get pods -l app=promtail
+kubectl -n monitoring logs -l app=promtail --tail=30
+```
+
+У Grafana Explore (Loki) через кілька хвилин мають з’явитися логи за мітками `namespace`, `pod`, `container`, `job=journal`, `unit`.

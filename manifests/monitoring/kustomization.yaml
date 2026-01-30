@@ -46,5 +46,12 @@ resources:
   - loki/deployment.yaml
   - loki/service.yaml
 
+  # Promtail (збір логів подів + journal) — DaemonSet на кожній ноді
+  - promtail/serviceaccount.yaml
+  - promtail/clusterrole.yaml
+  - promtail/clusterrolebinding.yaml
+  - promtail/configmap.yaml
+  - promtail/daemonset.yaml
+
 # Не використовуємо commonLabels: вони додають мітки до spec.selector у Deployment/DaemonSet,
 # а selector незмінний після створення — apply падає з "field is immutable" на вже створених ресурсах.

@@ -1,0 +1,59 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: promtail-config
+  namespace: monitoring
+  labels:
+    app: promtail
+data:
+  promtail.yaml: |
+    server:
+      http_listen_port: 9080
+      grpc_listen_port: 0
+
+    positions:
+      filename: /var/run/promtail/positions.yaml
+
+    clients:
+      - url: http://loki:3100/loki/api/v1/push
+
+    scrape_configs:
+      # Логи контейнерів з /var/log/pods (Kubernetes service discovery)
+      - job_name: kubernetes-pods
+        kubernetes_sd_configs:
+          - role: pod
+        relabel_configs:
+          # Обов'язково: Promtail збирає лише логи подів на цій же ноді
+          - source_labels: [__meta_kubernetes_pod_node_name]
+            target_label: __host__
+          - source_labels: [__meta_kubernetes_pod_node_name]
+            target_label: node
+          - source_labels: [__meta_kubernetes_namespace]
+            target_label: namespace
+          - source_labels: [__meta_kubernetes_pod_name]
+            target_label: pod
+          - source_labels: [__meta_kubernetes_pod_container_name]
+            target_label: container
+          # Шлях на ноді: /var/log/pods/<namespace>_<pod>_<uid>/<container>/*.log
+          - source_labels:
+              - __meta_kubernetes_pod_namespace
+              - __meta_kubernetes_pod_name
+              - __meta_kubernetes_pod_uid
+              - __meta_kubernetes_pod_container_name
+            separator: '/'
+            regex: '([^/]+)/([^/]+)/([^/]+)/([^/]+)'
+            target_label: __path__
+            replacement: /var/log/pods/$1_$2_$3/$4/*.log
+
+      # Логи systemd journal (k3s, k3s-agent тощо)
+      - job_name: journal
+        journal:
+          path: /var/log/journal
+          max_age: 12h
+          labels:
+            job: journal
+        relabel_configs:
+          - source_labels: [__journal__systemd_unit]
+            target_label: unit
+          - source_labels: [__journal__hostname]
+            target_label: nodename
