@@ -211,6 +211,30 @@ kubectl logs -n portainer -l app=portainer --tail=100
 
 **6. Якщо поди на частині нод не досягають 10.43.0.1 або 10.43.0.10** — виконати кроки з `manifests/FIX_CLUSTERIP_ACCESS_FROM_ALL_NODES.md` (firewall, kube-proxy).
 
+### Portainer на master-node або work-node (будь-яка з двох нод)
+
+Зараз Portainer прив’язаний до **master-node** (nodeSelector), бо на **work-node** поди не досягають CoreDNS — середовище "local" тоді Down. Storage (OCFS2) для Portainer є лише на **master-node** та **work-node**, тому "будь-яка нода" для Portainer = одна з цих двох.
+
+**Щоб Portainer міг запускатися на master-node або work-node:**
+
+1. Виправити доступ подів до CoreDNS і API з work-node за інструкцією **`manifests/FIX_CLUSTERIP_ACCESS_FROM_ALL_NODES.md`** (firewall, trusted zones для 10.42.0.0/16, 10.43.0.0/16 тощо).
+2. У **deployment.yaml** замінити блок з `nodeSelector: kubernetes.io/hostname: master-node` на `affinity` з двома нодами:
+   ```yaml
+   affinity:
+     nodeAffinity:
+       requiredDuringSchedulingIgnoredDuringExecution:
+         nodeSelectorTerms:
+         - matchExpressions:
+           - key: kubernetes.io/hostname
+             operator: In
+             values:
+             - master-node
+             - work-node
+   ```
+3. Застосувати зміни і перезапустити: `kubectl apply -f deployment.yaml`, `kubectl rollout restart deployment/portainer -n portainer`.
+
+Після цього scheduler зможе ставити под Portainer на master-node або work-node; на обох нодах "local" environment має бути Up.
+
 ### PVC не зв'язується з PV
 
 ```bash
