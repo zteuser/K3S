@@ -216,14 +216,14 @@ sudo nft list ruleset
 
    Очікується HTTP 200 або 403 (головне — не "connection refused" і не "no route to host").
 
-2. Перезапустіть поди, які раніше не могли достукатися до API (наприклад Promtail, CoreDNS на worker):
+2. Перезапустіть поди, які раніше не могли достукатися до API (наприклад Promtail):
 
    ```bash
    kubectl -n monitoring delete pod -l app=promtail
    kubectl get pods -n kube-system -l k8s-app=kube-dns -o wide
    ```
 
-3. У логах не повинно бути "no route to host":
+3. У логах не повинно бути "no route to host" або DNS timeout:
 
    ```bash
    kubectl -n monitoring logs -l app=promtail --tail=20
