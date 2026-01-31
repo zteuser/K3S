@@ -99,6 +99,22 @@ kubectl run dns-test --rm -it --restart=Never --image=busybox:1.36 -- nslookup k
 
 ---
 
-## 5. Якщо kube-router знову витісняє правила (FORWARD)
+## 5. Якщо під Portainer на work-node і таймаут лишається
 
-kube-router періодично вставляє `KUBE-ROUTER-FORWARD` на початок FORWARD, тоді ручні ACCEPT зсуваються вниз і перестають спрацьовувати. Рішення — cron-скрипт на **кожній** ноді, див. `manifests/FIX_CLUSTERIP_ACCESS_FROM_ALL_NODES.md`, розділ «Якщо kube-router знову ставить своє правило першим».
+1. **Переконайтеся, що скрипт виконано на всіх нодах:** work-node, master-node, macmini7, beelinkeqr5.
+2. **На work-node і на ноді, де крутиться API (macmini7/beelinkeqr5):**
+   ```bash
+   sudo iptables -L FORWARD -n -v --line-numbers | head -15
+   ```
+   На початку мають бути 4× ACCEPT для 10.42/10.43. Якщо першим стоїть `KUBE-ROUTER-FORWARD` — ще раз виконати на цій ноді `sudo ./apply-fix-dns-api.sh` (або команди з п. 1.2).
+3. **На work-node** має бути правило INPUT для 192.168.200.0/30 (п. 2).
+4. **Тимчасово:** щоб Portainer UI працював (без Bad Gateway), зафіксуйте под на master-node: у `deployment.yaml` має бути `nodeSelector: kubernetes.io/hostname: master-node`. Потім:
+   ```bash
+   kubectl apply -f manifests/portainer/deployment.yaml
+   kubectl delete pod -n portainer -l app=portainer
+   ```
+   Після цього под має заплануватися на master-node; Traefik і Portainer будуть на одній ноді, API-доступ має працювати.
+
+## 6. Якщо kube-router знову витісняє правила (FORWARD)
+
+kube-router періодично вставляє `KUBE-ROUTER-FORWARD` на початок FORWARD, тоді ручні ACCEPT зсуваються вниз і перестають спрацьовувати. Рішення — cron-скрипт на **кожній** ноді, див. `manifests/FIX_CLUSTERIP_ACCESS_FROM_ALL_NODES.md`, розділ «Якщо kube-router знову ставить своє правило першим». Поки це не налаштовано, після перезапуску k3s або кількох хвилин правила можуть знову зміститися — тоді або повторно запускати скрипт, або тримати Portainer на master-node (nodeSelector).
