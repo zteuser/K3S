@@ -207,7 +207,9 @@ kubectl logs -n portainer -l app=portainer --tail=100
 ```
 Шукайте помилки типу "connection refused", "no route to host", "unauthorized".
 
-**5. Якщо поди на частині нод не досягають 10.43.0.1** — виконати кроки з `manifests/FIX_CLUSTERIP_ACCESS_FROM_ALL_NODES.md` (firewall, kube-proxy).
+**5. DNS timeout на work-node:** якщо в логах Portainer є `lookup kubernetes.default.svc on 10.43.0.10:53: i/o timeout`, под на **work-node** не досягає CoreDNS. У deployment додано **nodeSelector: kubernetes.io/hostname: master-node**, щоб Portainer завжди запускався на master-node (де DNS працює). Застосуйте оновлений deployment і перезапустіть под.
+
+**6. Якщо поди на частині нод не досягають 10.43.0.1 або 10.43.0.10** — виконати кроки з `manifests/FIX_CLUSTERIP_ACCESS_FROM_ALL_NODES.md` (firewall, kube-proxy).
 
 ### PVC не зв'язується з PV
 

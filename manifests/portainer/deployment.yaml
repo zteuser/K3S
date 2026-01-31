@@ -17,17 +17,10 @@ spec:
     spec:
       serviceAccountName: portainer
       dnsPolicy: ClusterFirst
-      # Обмежуємо deployment на ноди з OCFS2 storage
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-            - matchExpressions:
-              - key: kubernetes.io/hostname
-                operator: In
-                values:
-                - master-node
-                - work-node
+      # Запускати на master-node: на work-node поди не досягають CoreDNS (10.43.0.10:53), тому "local" environment Down.
+      # OCFS2 (portainer-data) доступний на master-node та work-node; обмежуємо на master-node для робочого DNS.
+      nodeSelector:
+        kubernetes.io/hostname: master-node
       containers:
       - name: portainer
         image: portainer/portainer-ce:latest
