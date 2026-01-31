@@ -97,3 +97,49 @@ ip route
 ## 6. Готовий конфіг для beelinkeqr5 (enp1s0, eno1)
 
 На beelinkeqr5 два Ethernet: **enp1s0** та **eno1**. Файл `beelinkeqr5-netplan-dual-eth-dhcp.yaml` у репо вже містить ці імена — скопіюйте його на ноду в `/etc/netplan/01-dual-eth-dhcp.yaml` та виконайте `sudo netplan apply`.
+
+---
+
+## 7. Вимкнення Wi‑Fi при переході на Ethernet
+
+Якщо Ethernet вже налаштований і потрібно лише вимкнути Wi‑Fi на beelinkeqr5.
+
+### Одразу (до перезавантаження)
+
+```bash
+# М’яке блокування Wi‑Fi (rfkill)
+sudo rfkill block wifi
+```
+
+Перевірка: `rfkill list` — Wi‑Fi має бути з `Soft blocked: yes`. Увімкнути знову: `sudo rfkill unblock wifi`.
+
+### Постійно (після перезавантаження)
+
+**Варіант A — rfkill при завантаженні (systemd):**
+
+```bash
+sudo tee /etc/systemd/system/disable-wifi.service <<'EOF'
+[Unit]
+Description=Disable WiFi radio
+After=multi-user.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/rfkill block wifi
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+EOF
+sudo systemctl daemon-reload
+sudo systemctl enable --now disable-wifi.service
+```
+
+**Варіант B — NetworkManager (якщо Wi‑Fi керується NM):**
+
+```bash
+nmcli radio wifi off
+# Зберегти стан: у більшості дистрибутивів NM зберігає це сам
+```
+
+**Варіант C — netplan:** у вашому netplan лише `ethernets`; якщо Wi‑Fi описується в іншому файлі в `/etc/netplan/` (наприклад `00-installer-config.yaml` з `wifis:`), можна видалити або закоментувати секцію `wifis:` в тому файлі, потім `sudo netplan apply`. Після цього Wi‑Fi не буде підніматися через netplan (але rfkill block wifi надійніше, якщо інші сервіси не піднімають його знову).

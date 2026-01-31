@@ -12,6 +12,58 @@
 
 ---
 
+## 0. Перевірка конективності безпосередньо з контейнера Portainer
+
+Виконувати з хоста (macmini7 або master-node), де є `kubectl`. Це допомагає зрозуміти, чи под Portainer досягає API, DNS і kubelet на work-node.
+
+### Варіант A: з пода Portainer (якщо в образі є curl/wget)
+
+```bash
+# Ім'я пода (один з)
+PORTAINER_POD=$(kubectl get pods -n portainer -l app=portainer -o jsonpath='{.items[0].metadata.name}')
+
+# API (10.43.0.1:443) — має повернути JSON або "ok"
+kubectl exec -n portainer "$PORTAINER_POD" -- wget -qO- --no-check-certificate --timeout=5 https://10.43.0.1:443/version 2>&1 | head -5
+# або якщо є curl:
+# kubectl exec -n portainer "$PORTAINER_POD" -- curl -ks -m 5 https://10.43.0.1:443/version
+
+# DNS (10.43.0.10:53)
+kubectl exec -n portainer "$PORTAINER_POD" -- nslookup kubernetes.default.svc.cluster.local 10.43.0.10 2>&1
+
+# Kubelet на work-node (10.0.10.20:10250) — прямий доступ з пода (для порівняння з proxy через API)
+kubectl exec -n portainer "$PORTAINER_POD" -- wget -qO- --no-check-certificate --timeout=5 https://10.0.10.20:10250/metrics 2>&1 | head -3
+```
+
+Якщо в образі Portainer немає `wget`/`curl`/`nslookup`, використовуйте варіант B.
+
+### Варіант B: debug-под на тій самій ноді, що й Portainer
+
+Под запускається на **master-node** (як і Portainer), тому мережева поведінка буде така сама:
+
+```bash
+# Запустити под на тій самій ноді, що й Portainer (master-node)
+kubectl run conn-test --rm -it --restart=Never \
+  --image=curlimages/curl \
+  --overrides='{"spec":{"nodeSelector":{"kubernetes.io/hostname":"master-node"}}}' \
+  -- sh -c '
+    echo "=== API 10.43.0.1:443 ==="
+    curl -ks -m 5 https://10.43.0.1:443/version | head -3
+    echo ""
+    echo "=== DNS 10.43.0.10 ==="
+    nslookup kubernetes.default.svc.cluster.local 10.43.0.10
+    echo ""
+    echo "=== Kubelet 10.0.10.20:10250 ==="
+    curl -ks -m 5 https://10.0.10.20:10250/metrics 2>&1 | head -3
+  '
+```
+
+**Інтерпретація:**
+- **API таймаут** — под не досягає 10.43.0.1 (firewall/FORWARD на нодах).
+- **DNS таймаут** — под не досягає CoreDNS або відповідь не повертається (INPUT/FORWARD, зокрема на work-node — 192.168.200.0/30).
+- **10.0.10.20:10250** — якщо з пода працює, а в логах Portainer все одно 502 при proxy через API, то 502 йде від **хоста** control-plane (API server підключається до 10.0.10.20:10250 з ноди, а не з пода); перевіряйте доступ з хоста: `nc -zv 10.0.10.20 10250` на macmini7/master-node і firewall на work-node для порту 10250.
+
+---
+
 ## 1. На **кожній** ноді кластера (master-node, macmini7, beelinkeqr5, work-node)
 
 Виконати по SSH на відповідній ноді.
@@ -99,7 +151,33 @@ kubectl run dns-test --rm -it --restart=Never --image=busybox:1.36 -- nslookup k
 
 ---
 
-## 5. Якщо під Portainer на work-node і таймаут лишається
+## 5. Portainer: «failed to snapshot performance metrics for node work-node» (502 Bad Gateway на 10.0.10.20:10250)
+
+**Симптом у логах:**  
+`failed to snapshot performance metrics for node work-node | error="... proxy error from 127.0.0.1:6443 while dialing 10.0.10.20:10250, code 502: 502 Bad Gateway"`
+
+**Причина:** Kubernetes API server (на control-plane) проксує запити Portainer до kubelet на work-node за адресою **10.0.10.20:10250**. Якщо на **work-node** firewall блокує вхід на порт **10250** з control-plane, з’єднання не встановлюється і API повертає 502.
+
+**Виправлення на work-node:** дозволити вхід на порт kubelet (10250) з IP control-plane (або з усіх внутрішніх мереж):
+
+```bash
+# Дозволити вхід на kubelet (10250) з control-plane / внутрішніх мереж
+sudo iptables -I INPUT 1 -p tcp --dport 10250 -s 10.0.0.0/8 -j ACCEPT
+sudo iptables -I INPUT 1 -p tcp --dport 10250 -s 192.168.0.0/16 -j ACCEPT
+```
+
+Після перевірки — зберегти правила (п. 1.4).
+
+**Важливо:** запит на метрики ноди проксує **API server** — він крутиться на одній із control-plane нод (master-node, macmini7, beelinkeqr5). З’єднання до 10.0.10.20:10250 відкриває саме **хост** цієї ноди, а не под. Тому перевірку потрібно робити з **кожної** control-plane ноди:
+
+```bash
+# На кожному control-plane (master-node, macmini7, beelinkeqr5) виконати:
+nc -zv 10.0.10.20 10250
+```
+
+Якщо з пода на master-node `curl https://10.0.10.20:10250/metrics` дає "Unauthorized" (з’єднання є), а з хоста beelinkeqr5 `nc -zv 10.0.10.20 10250` — таймаут, то 502 у Portainer саме через те, що запит обробив API server на beelinkeqr5 і з beelinkeqr5 до work-node:10250 немає доступу. Тоді: маршрут з beelinkeqr5 до 10.0.10.20 і firewall на work-node для порту 10250 з IP beelinkeqr5.
+
+## 6. Якщо під Portainer на work-node і таймаут лишається
 
 1. **Переконайтеся, що скрипт виконано на всіх нодах:** work-node, master-node, macmini7, beelinkeqr5.
 2. **На work-node і на ноді, де крутиться API (macmini7/beelinkeqr5):**
@@ -115,6 +193,6 @@ kubectl run dns-test --rm -it --restart=Never --image=busybox:1.36 -- nslookup k
    ```
    Після цього под має заплануватися на master-node; Traefik і Portainer будуть на одній ноді, API-доступ має працювати.
 
-## 6. Якщо kube-router знову витісняє правила (FORWARD)
+## 7. Якщо kube-router знову витісняє правила (FORWARD)
 
-kube-router періодично вставляє `KUBE-ROUTER-FORWARD` на початок FORWARD, тоді ручні ACCEPT зсуваються вниз і перестають спрацьовувати. Рішення — cron-скрипт на **кожній** ноді, див. `manifests/FIX_CLUSTERIP_ACCESS_FROM_ALL_NODES.md`, розділ «Якщо kube-router знову ставить своє правило першим». Поки це не налаштовано, після перезапуску k3s або кількох хвилин правила можуть знову зміститися — тоді або повторно запускати скрипт, або тримати Portainer на master-node (nodeSelector).
+kube-router періодично вставляє `KUBE-ROUTER-FORWARD` на початок FORWARD, тоді ручні ACCEPT зсуваються вниз і перестають спрацьовувати. Рішення — cron-скрипт на **кожній** ноді, див. `manifests/FIX_CLUSTERIP_ACCESS_FROM_ALL_NODES.md`, розділ «Якщо kube-router знову ставить своє правило першим». Поки це не налаштовано, після перезапуску k3s або кількох хвилин правила можуть знову зміститися — тоді або повторно запускати скрипт, або тримати Portainer на master-node (nodeSelector). Див. також розділ 5 вище для помилки «failed to snapshot performance metrics for node work-node».

@@ -29,7 +29,8 @@ data:
 
       - job_name: 'kubernetes-nodes'
         static_configs:
-          - targets: ['10.0.10.10:10250', '10.0.10.20:10250', '192.168.2.19:10250']
+          # master-node, work-node, macmini7, beelinkeqr5 — при додаванні ноди додайте її IP:10250
+          - targets: ['10.0.10.10:10250', '10.0.10.20:10250', '192.168.2.19:10250', '192.168.2.95:10250']
         scheme: https
         tls_config:
           insecure_skip_verify: true
@@ -37,7 +38,8 @@ data:
 
       - job_name: 'node-exporter'
         static_configs:
-          - targets: ['10.0.10.10:9100', '10.0.10.20:9100', '192.168.2.19:9100']
+          # master-node, work-node, macmini7, beelinkeqr5 — при додаванні ноди додайте її IP:9100
+          - targets: ['10.0.10.10:9100', '10.0.10.20:9100', '192.168.2.19:9100', '192.168.2.95:9100']
 
       # cAdvisor через API server proxy (bearer token приймається; для прямого scrape по IP у k3s часто DOWN)
       - job_name: 'cadvisor'
