@@ -1,0 +1,25 @@
+# NetworkPolicy: дозволити весь ingress до CoreDNS (UDP/TCP 53).
+# Потрібно, якщо kube-router за замовчуванням реджектить трафік до пода CoreDNS
+# з частини нод (наприклад work-node) — тоді явний allow дає kube-router позначити
+# трафік як дозволений (mark 0x10000) і не реджектити.
+#
+# Застосування: kubectl apply -f networkpolicy-allow-all-ingress-dns.yaml
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-all-ingress-to-kube-dns
+  namespace: kube-system
+spec:
+  podSelector:
+    matchLabels:
+      k8s-app: kube-dns
+  policyTypes:
+  - Ingress
+  ingress:
+  # Дозволити DNS (UDP/TCP 53) з будь-якого пода (без from = з усіх джерел)
+  - ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53

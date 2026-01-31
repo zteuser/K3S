@@ -1,0 +1,59 @@
+# NetworkPolicy: дозволити ingress з kube-system (CoreDNS) до подів у default,
+# monitoring, portainer. Потрібно, якщо відповіді DNS від CoreDNS до подів на
+# work-node відкидаються kube-router на work-node. Явний allow дає kube-router
+# позначити відповіді від CoreDNS як дозволені.
+#
+# Два правила: (1) з kube-system; (2) з усіх namespace — щоб не ламати інший ingress.
+#
+# Застосування: kubectl apply -f networkpolicy-allow-dns-replies-default.yaml
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-from-kube-system
+  namespace: default
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+  - from:
+    - namespaceSelector: {}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-from-kube-system
+  namespace: monitoring
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+  - from:
+    - namespaceSelector: {}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-from-kube-system
+  namespace: portainer
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+  - from:
+    - namespaceSelector: {}

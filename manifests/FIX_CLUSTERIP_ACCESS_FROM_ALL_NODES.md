@@ -138,6 +138,33 @@ sudo iptables -I FORWARD 1 -d 10.43.0.0/16 -j ACCEPT
 
 **Порядок правил у FORWARD:** правила ACCEPT для 10.42/10.43 мають бути **першими** у ланцюгу FORWARD (перевірка: `iptables -L FORWARD -n -v | head -15`). Якщо першим йде `KUBE-ROUTER-FORWARD` (kube-router), весь трафік спочатку потрапляє туди і може бути відкинутий — тоді DNS з work-node не працюватиме. На такій ноді ще раз виконайте тільки 4 команди для FORWARD (див. вище); вони вставляють правила в позицію 1 і зсувають KUBE-ROUTER-FORWARD нижче.
 
+**Якщо kube-router знову ставить своє правило першим:** kube-router (або k3s) періодично оновлює iptables і вставляє `KUBE-ROUTER-FORWARD` на початок FORWARD, тому ручні ACCEPT зсуваються вниз і перестають спрацьовувати. Рішення — скрипт, що періодично (cron) видаляє наші правила за коментарем і знову вставляє їх на позицію 1. На **кожній** ноді (work-node, macmini7, beelinkeqr5, master-node), де потрібен доступ подів до ClusterIP/DNS:
+
+1. Створити скрипт `/usr/local/bin/k3s-forward-pod-cidr.sh`:
+   ```bash
+   #!/bin/bash
+   COMMENT="k3s-pod-cidr-accept"
+   for _ in 1 2 3 4 5 6 7 8; do
+     iptables -D FORWARD -s 10.42.0.0/16 -j ACCEPT -m comment --comment "$COMMENT" 2>/dev/null || true
+     iptables -D FORWARD -d 10.42.0.0/16 -j ACCEPT -m comment --comment "$COMMENT" 2>/dev/null || true
+     iptables -D FORWARD -s 10.43.0.0/16 -j ACCEPT -m comment --comment "$COMMENT" 2>/dev/null || true
+     iptables -D FORWARD -d 10.43.0.0/16 -j ACCEPT -m comment --comment "$COMMENT" 2>/dev/null || true
+   done
+   iptables -I FORWARD 1 -d 10.43.0.0/16 -j ACCEPT -m comment --comment "$COMMENT"
+   iptables -I FORWARD 1 -s 10.43.0.0/16 -j ACCEPT -m comment --comment "$COMMENT"
+   iptables -I FORWARD 1 -d 10.42.0.0/16 -j ACCEPT -m comment --comment "$COMMENT"
+   iptables -I FORWARD 1 -s 10.42.0.0/16 -j ACCEPT -m comment --comment "$COMMENT"
+   ```
+
+2. `chmod +x /usr/local/bin/k3s-forward-pod-cidr.sh`
+
+3. Cron кожні 1–2 хвилини (root): `crontab -e`, додати:
+   ```
+   */2 * * * * /usr/local/bin/k3s-forward-pod-cidr.sh
+   ```
+
+Після цього перевірити: `iptables -L FORWARD -n -v | head -10` — спочатку мають бути 4× ACCEPT з коментарем `k3s-pod-cidr-accept`, потім KUBE-ROUTER-FORWARD.
+
 ### 3.3 Дозволити лише forward (якщо INPUT вже не реджектить pod-трафік)
 
 Якщо є політика DROP лише для FORWARD:
@@ -208,6 +235,10 @@ sudo nft list ruleset
    Перевірка: `sudo iptables -L FORWARD -n -v | head -12` — спочатку мають бути 4× ACCEPT, потім KUBE-ROUTER-FORWARD.
 
 3. **DNS по TCP** (щоб виключити проблему лише з UDP): з пода на work-node спробувати `dig @10.43.0.10 kubernetes.default.svc.cluster.local +tcp` (образ з dig) або перезапустити CoreDNS і повторити nslookup.
+
+4. **Якщо після правил на обох нодах DNS все ще таймаутить** — перевірити маршрутизацію та reverse path filter:
+   - **На work-node** маршрут до пода CoreDNS (на macmini7): `ip route get 10.42.0.179` — має бути маршрут через flannel/overlay (не "Network is unreachable").
+   - **rp_filter**: якщо ядро відкидає пакети через reverse path (відповідь приходить іншим шляхом, ніж запит), DNS може «висити». На work-node та macmini7 перевірити: `sysctl net.ipv4.conf.all.rp_filter net.ipv4.conf.default.rp_filter`. Якщо значення `1` (strict), спробувати на інтерфейсі overlay (flannel.1, vxlan тощо) або globally: `sudo sysctl -w net.ipv4.conf.all.rp_filter=2` та `net.ipv4.conf.default.rp_filter=2` (2 = loose). Після перевірки — зберегти в `/etc/sysctl.d/` якщо потрібно постійно.
 
 ### 5.2 API по IP з worker-ноди
 
