@@ -167,6 +167,21 @@ kubectl describe pod -l app=portainer -n portainer
 
 ## Troubleshooting
 
+### Bad Gateway при доступі через portainer.lan (Ingress)
+
+**Симптом:** браузер показує "Bad Gateway" при відкритті https://portainer.lan.
+
+**Якщо Portainer і Traefik на одній ноді (master-node):** трафік між ними не йде між нодами. 502 тоді частіше через те, що Portainer не відповідає коректно (наприклад не може досягти Kubernetes API і повертає помилку). Перевірте логи:
+```bash
+kubectl logs -n portainer -l app=portainer --tail=50
+```
+Якщо там `dial tcp 10.43.0.1:443: i/o timeout` або DNS timeout до 10.43.0.10 — проблема в доступі пода до API/DNS (firewall або маршрути на ноді, див. `manifests/FIX_CLUSTERIP_ACCESS_FROM_ALL_NODES.md`).
+
+**Якщо Portainer на іншій ноді (наприклад work-node), а Traefik на master-node:** Traefik проксує на Service → под Portainer. 502 означає, що запит або відповідь між нодами блокуються (FORWARD). На обох нодах мають бути ACCEPT для 10.42/10.43 на початку ланцюга FORWARD (див. `manifests/FIX_CLUSTERIP_ACCESS_FROM_ALL_NODES.md`). Перевірка досяжності пода з поду:
+```bash
+kubectl run curl-test --rm -it --restart=Never --image=curlimages/curl -- curl -s -o /dev/null -w "%{http_code}\n" http://<portainer-pod-ip>:9000
+```
+
 ### Pod не запускається
 
 ```bash
