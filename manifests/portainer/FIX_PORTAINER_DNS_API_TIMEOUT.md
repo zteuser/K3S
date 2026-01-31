@@ -177,6 +177,38 @@ nc -zv 10.0.10.20 10250
 
 Якщо з пода на master-node `curl https://10.0.10.20:10250/metrics` дає "Unauthorized" (з’єднання є), а з хоста beelinkeqr5 `nc -zv 10.0.10.20 10250` — таймаут, то 502 у Portainer саме через те, що запит обробив API server на beelinkeqr5 і з beelinkeqr5 до work-node:10250 немає доступу. Тоді: маршрут з beelinkeqr5 до 10.0.10.20 і firewall на work-node для порту 10250 з IP beelinkeqr5.
 
+---
+
+## 5.1 Prometheus: targets beelinkeqr5 (192.168.2.95) DOWN — context deadline exceeded
+
+**Симптоми:** у Prometheus → **Targets** для **kubernetes-nodes** і **node-exporter** target `192.168.2.95` (beelinkeqr5) у стані **DOWN**, помилка: `Get "https://192.168.2.95:10250/metrics": context deadline exceeded` та `Get "http://192.168.2.95:9100/metrics": context deadline exceeded`.
+
+**Причина:** Prometheus (под на master-node) скрейпить kubelet (10250) і node-exporter (9100) на beelinkeqr5. Якщо на **beelinkeqr5** firewall блокує вхід на порти **10250** і **9100** з мережі кластера (pod CIDR, інші ноди), з’єднання таймаутять.
+
+**Виправлення на beelinkeqr5:** дозволити вхід на порти kubelet (10250) і node-exporter (9100) з мереж кластера:
+
+```bash
+# На ноді beelinkeqr5 (SSH або консоль):
+sudo iptables -I INPUT 1 -p tcp --dport 10250 -s 10.0.0.0/8 -j ACCEPT
+sudo iptables -I INPUT 1 -p tcp --dport 10250 -s 192.168.0.0/16 -j ACCEPT
+sudo iptables -I INPUT 1 -p tcp --dport 9100 -s 10.0.0.0/8 -j ACCEPT
+sudo iptables -I INPUT 1 -p tcp --dport 9100 -s 192.168.0.0/16 -j ACCEPT
+```
+
+Після перевірки — зберегти правила (п. 1.4). Альтернатива: виконати на beelinkeqr5 скрипт `apply-fix-dns-api.sh` (п. 1.2); у нього додано блок для beelinkeqr5, який вставляє ці ж правила.
+
+Перевірка з ноди, де крутиться Prometheus (master-node):
+
+```bash
+# З master-node (або з пода prometheus):
+curl -ks -m 5 https://192.168.2.95:10250/metrics 2>&1 | head -3
+curl -s -m 5 http://192.168.2.95:9100/metrics 2>&1 | head -3
+```
+
+Через 1–2 хвилини targets **192.168.2.95** у Prometheus мають стати **UP**.
+
+---
+
 ## 6. Якщо під Portainer на work-node і таймаут лишається
 
 1. **Переконайтеся, що скрипт виконано на всіх нодах:** work-node, master-node, macmini7, beelinkeqr5.

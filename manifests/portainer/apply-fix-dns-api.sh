@@ -23,6 +23,14 @@ if [ "$(hostname)" = "work-node" ]; then
   iptables -I INPUT 1 -s 192.168.200.0/30 -j ACCEPT
 fi
 
+# На beelinkeqr5: вхід на kubelet (10250) і node-exporter (9100) для Prometheus
+if [ "$(hostname)" = "beelinkeqr5" ]; then
+  iptables -I INPUT 1 -p tcp --dport 10250 -s 10.0.0.0/8 -j ACCEPT
+  iptables -I INPUT 1 -p tcp --dport 10250 -s 192.168.0.0/16 -j ACCEPT
+  iptables -I INPUT 1 -p tcp --dport 9100 -s 10.0.0.0/8 -j ACCEPT
+  iptables -I INPUT 1 -p tcp --dport 9100 -s 192.168.0.0/16 -j ACCEPT
+fi
+
 echo "Rules applied. FORWARD head:"
 iptables -L FORWARD -n -v | head -10
 echo ""
