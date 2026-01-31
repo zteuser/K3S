@@ -16,15 +16,22 @@
 
 ## 1. Перевірки перед змінами
 
-Виконуйте на **кожній ноді** (master і workers).
+**Де виконувати `kubectl`:** на worker-нодах часто немає kubeconfig (помилка `connection to server localhost:8080 refused`). Усі команди `kubectl` нижче виконуйте з **control-plane** ноди (macmini7, beelinkeqr5 або master-node), де є доступ до кластера (наприклад `/etc/rancher/k3s/k3s.yaml`).
+
+Перевірки в цьому розділі: пункти 1.1 — з control-plane; 1.2, 1.3, 1.4 — безпосередньо на відповідній ноді (SSH на worker/master).
 
 ### 1.1 kube-proxy
 
+Виконати **з control-plane** (macmini7 або beelinkeqr5):
+
 ```bash
+kubectl get pods -n kube-system -o wide | grep -E 'kube-proxy|NAME'
+# або напряму DaemonSet (у k3s він називається kube-proxy):
+kubectl get daemonset -n kube-system
 kubectl get pods -n kube-system -l k8s-app=kube-proxy -o wide
 ```
 
-Має бути один под на кожну ноду, статус Running. Якщо на worker немає пода або він у CrashLoopBackOff — спочатку вирішіть це.
+Має бути один под kube-proxy на кожну ноду (включно з work-node), статус Running. Якщо на worker немає пода або він у CrashLoopBackOff — спочатку вирішіть це.
 
 ### 1.2 Маршрути та інтерфейси
 
