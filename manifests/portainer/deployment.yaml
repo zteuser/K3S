@@ -17,10 +17,17 @@ spec:
     spec:
       serviceAccountName: portainer
       dnsPolicy: ClusterFirst
-      # Запускати на master-node: на work-node поди не досягають CoreDNS (10.43.0.10:53), тому "local" environment Down.
-      # OCFS2 (portainer-data) є на master-node та work-node. Щоб дозволити Portainer на обох нодах — спочатку виправити ClusterIP/DNS на work-node (FIX_CLUSTERIP_ACCESS_FROM_ALL_NODES.md), потім замінити nodeSelector на nodeAffinity з values: [master-node, work-node].
-      nodeSelector:
-        kubernetes.io/hostname: master-node
+      # API (10.43.0.1) з work-node тепер доступний (iptables fix). Portainer використовує in-cluster config (KUBERNETES_SERVICE_HOST=10.43.0.1), тому може працювати на обох нодах. OCFS2 (portainer-data) є лише на master-node та work-node.
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                - master-node
+                - work-node
       containers:
       - name: portainer
         image: portainer/portainer-ce:latest
