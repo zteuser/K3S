@@ -108,32 +108,55 @@ sudo iptables -L -n -v | head -60
 sudo iptables -L FORWARD -n -v
 ```
 
-Шукайте правила, що DROP або REJECT трафік з 10.42.x.x або до 10.43.x.x.
+Шукайте правила, що DROP або REJECT трафік з 10.42.x.x або до 10.43.x.x. Якщо в кінці INPUT або FORWARD є `REJECT all`, а дозволу лише для 10.0.10.0/24 — трафік з подів (10.42.x) і до сервісів (10.43.x) буде відкидатися. Потрібно додати ACCEPT для 10.42.0.0/16 і 10.43.0.0/16 **перед** цим REJECT.
 
-### 3.2 Дозволити forward для pod-мережі (приклад)
+### 3.2 Worker: дозволити pod/service CIDR в INPUT і FORWARD
 
-Якщо є політика DROP за замовчуванням для FORWARD, потрібно дозволити трафік, пов’язаний з pod/service:
+Якщо на worker є фінальне правило `REJECT all` в INPUT (або FORWARD), а 10.42/16 і 10.43/16 не дозволені — поди не зможуть досягти API/CoreDNS. Додайте правила **на початок** ланцюга (щоб вони спрацювали раніше REJECT):
+
+**На work-node (і будь-якій worker-ноді з такою політикою):**
 
 ```bash
-# Приклад: дозволити forward для 10.42.0.0/16 і 10.43.0.0/16
+# INPUT: дозволити трафік з/до pod і service мереж (щоб поди могли ходити до ClusterIP)
+sudo iptables -I INPUT 1 -s 10.43.0.0/16 -j ACCEPT
+sudo iptables -I INPUT 1 -d 10.43.0.0/16 -j ACCEPT
+sudo iptables -I INPUT 1 -s 10.42.0.0/16 -j ACCEPT
+sudo iptables -I INPUT 1 -d 10.42.0.0/16 -j ACCEPT
+
+# FORWARD: те саме для forwarded трафіку подів
 sudo iptables -I FORWARD 1 -s 10.42.0.0/16 -j ACCEPT
 sudo iptables -I FORWARD 1 -d 10.42.0.0/16 -j ACCEPT
 sudo iptables -I FORWARD 1 -s 10.43.0.0/16 -j ACCEPT
 sudo iptables -I FORWARD 1 -d 10.43.0.0/16 -j ACCEPT
 ```
 
-Збережіть правила (залежить від дистрибутиву):
+Після перевірки (под з work-node досягає API) — збережіть правила (див. 3.4).
+
+### 3.3 Дозволити лише forward (якщо INPUT вже не реджектить pod-трафік)
+
+Якщо є політика DROP лише для FORWARD:
+
+```bash
+sudo iptables -I FORWARD 1 -s 10.42.0.0/16 -j ACCEPT
+sudo iptables -I FORWARD 1 -d 10.42.0.0/16 -j ACCEPT
+sudo iptables -I FORWARD 1 -s 10.43.0.0/16 -j ACCEPT
+sudo iptables -I FORWARD 1 -d 10.43.0.0/16 -j ACCEPT
+```
+
+### 3.4 Збереження правил (persistent)
 
 ```bash
 # Debian/Ubuntu з iptables-persistent
 sudo netfilter-persistent save
-# або
+# або вручну
 sudo iptables-save | sudo tee /etc/iptables/rules.v4
 ```
 
-### 3.3 На **master**: вхід на 6443
+Якщо правила задаються скриптом при завантаженні — додайте туди ці ж рядки.
 
-Якщо є INPUT DROP за замовчуванням:
+### 3.5 На **master**: вхід на 6443
+
+Якщо є INPUT DROP/REJECT за замовчуванням:
 
 ```bash
 sudo iptables -I INPUT 1 -p tcp --dport 6443 -j ACCEPT
@@ -141,7 +164,7 @@ sudo iptables -I INPUT 1 -p tcp --dport 6443 -j ACCEPT
 # sudo iptables -I INPUT 1 -p tcp -s 10.42.0.0/16 --dport 6443 -j ACCEPT
 ```
 
-І знову збережіть правила.
+І збережіть правила (3.4).
 
 ---
 
