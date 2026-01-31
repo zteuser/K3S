@@ -180,6 +180,35 @@ kubectl logs -l app=portainer -n portainer
 kubectl get events -n portainer --sort-by='.lastTimestamp'
 ```
 
+### Environment "local" Down / Disconnected
+
+Якщо в Portainer UI середовище **local** (kubernetes.default.svc) показує **Down** і **Disconnected**, под Portainer не може досягти Kubernetes API (10.43.0.1:443).
+
+**1. Перевірити, чи под Portainer працює і на якій ноді:**
+```bash
+kubectl get pods -n portainer -l app=portainer -o wide
+```
+
+**2. Перевірити доступ подів до API з тієї ж ноди** (замініть `<NODE_NAME>` на ноду з кроку 1):
+```bash
+kubectl run curl-test --rm -it --restart=Never --image=curlimages/curl -- curl -k -s -o /dev/null -w "%{http_code}" https://kubernetes.default.svc.cluster.local/healthz
+```
+Якщо отримаєте код 200 або 401 — мережа до API працює. Якщо таймаут або "connection refused" — див. `manifests/FIX_CLUSTERIP_ACCESS_FROM_ALL_NODES.md`.
+
+**3. Перезапустити Portainer** (часто після змін у кластері допомагає):
+```bash
+kubectl rollout restart deployment/portainer -n portainer
+kubectl rollout status deployment/portainer -n portainer
+```
+
+**4. Перевірити логи Portainer:**
+```bash
+kubectl logs -n portainer -l app=portainer --tail=100
+```
+Шукайте помилки типу "connection refused", "no route to host", "unauthorized".
+
+**5. Якщо поди на частині нод не досягають 10.43.0.1** — виконати кроки з `manifests/FIX_CLUSTERIP_ACCESS_FROM_ALL_NODES.md` (firewall, kube-proxy).
+
 ### PVC не зв'язується з PV
 
 ```bash
