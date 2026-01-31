@@ -20,9 +20,10 @@
 Якщо потрібно, щоб **будь-які** поди могли плануватися на control-plane (як на звичайні worker-ноди):
 
 ```bash
-# Для кожної control-plane ноди (підставте імена: macmini7, beelinkeqr5 тощо)
+# Для кожної control-plane ноди (macmini7, beelinkeqr5, master-node)
 kubectl taint nodes macmini7 node-role.kubernetes.io/control-plane:NoSchedule-
 kubectl taint nodes beelinkeqr5 node-role.kubernetes.io/control-plane:NoSchedule-
+kubectl taint nodes master-node node-role.kubernetes.io/control-plane:NoSchedule-
 ```
 
 Якщо є старий taint `master`:
@@ -30,6 +31,7 @@ kubectl taint nodes beelinkeqr5 node-role.kubernetes.io/control-plane:NoSchedule
 ```bash
 kubectl taint nodes macmini7 node-role.kubernetes.io/master:NoSchedule-
 kubectl taint nodes beelinkeqr5 node-role.kubernetes.io/master:NoSchedule-
+kubectl taint nodes master-node node-role.kubernetes.io/master:NoSchedule-
 ```
 
 Після цього scheduler зможе розміщувати звичайні поди на цих нодах. Перевірка:
