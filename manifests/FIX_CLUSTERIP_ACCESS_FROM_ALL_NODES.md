@@ -188,6 +188,25 @@ sudo nft list ruleset
 
 ## 5. Перевірка після налаштувань
 
+### 5.1 DNS все ще таймаутить після правил на control-plane
+
+Якщо правила FORWARD на macmini7 (нода з CoreDNS) вже перші, а `nslookup` з пода на work-node до 10.43.0.10 все одно «connection timed out»:
+
+1. **DNS з пода на тій же ноді, що й CoreDNS** (перевірка, чи взагалі CoreDNS відповідає):
+   ```bash
+   kubectl run dns-local --rm -it --restart=Never --image=busybox:1.36 --overrides='{"spec":{"nodeName":"macmini7"}}' -- nslookup kubernetes.default.svc.cluster.local 10.43.0.10
+   ```
+   Якщо тут є відповідь, а з work-node — ні, проблема в маршрутизації/форвардингу між нодами (work-node ↔ macmini7).
+
+2. **На work-node** переконатися, що ACCEPT для 10.42/10.43 у FORWARD стоять **першими**:
+   ```bash
+   sudo iptables -L FORWARD -n -v | head -12
+   ```
+
+3. **DNS по TCP** (щоб виключити проблему лише з UDP): з пода на work-node спробувати `dig @10.43.0.10 kubernetes.default.svc.cluster.local +tcp` (образ з dig) або перезапустити CoreDNS і повторити nslookup.
+
+### 5.2 API по IP з worker-ноди
+
 1. На worker-ноді запустіть тестовий под і зверніться до API:
 
    ```bash
