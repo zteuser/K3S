@@ -38,6 +38,22 @@ kubectl -n monitoring get svc loki
 kubectl -n monitoring logs -l app=loki --tail=20
 ```
 
+## Permission denied у tsdb-shipper-cache (CrashLoopBackOff)
+
+Якщо Loki падає з помилкою **permission denied** на `/loki/tsdb-shipper-cache/...`, файли на томі мають неправильного власника (наприклад root). Виправлення:
+
+1. Запустити одноразовий Job, який змінить власника всього в `/loki` на UID 10001:
+   ```bash
+   kubectl apply -f manifests/monitoring/loki/job-fix-permissions.yaml
+   kubectl -n monitoring get jobs
+   kubectl -n monitoring logs job/loki-fix-permissions -f
+   ```
+2. Після успішного завершення Job (COMPLETIONS 1/1) перезапустити под Loki:
+   ```bash
+   kubectl -n monitoring delete pod -l app=loki
+   ```
+3. Перевірити: `kubectl -n monitoring get pods -l app=loki` — под має перейти в Running.
+
 **Логи в Grafana:** datasource **Loki** додано в `configmap-datasources.yaml` (URL: `http://loki:3100`). Після застосування ConfigMap перезапустіть Grafana, щоб підхопити новий datasource.
 
 Як переглядати логи:

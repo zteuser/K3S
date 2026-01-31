@@ -1,0 +1,36 @@
+# Одноразовий Job для виправлення прав на volume Loki (permission denied у tsdb-shipper-cache).
+# Застосувати: kubectl apply -f manifests/monitoring/loki/job-fix-permissions.yaml
+# Після успішного завершення Job: kubectl -n monitoring delete pod -l app=loki
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: loki-fix-permissions
+  namespace: monitoring
+spec:
+  ttlSecondsAfterFinished: 300
+  backoffLimit: 2
+  template:
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: master-node
+      restartPolicy: Never
+      containers:
+        - name: fix
+          image: busybox:1.36
+          command: ['sh', '-c']
+          args:
+            - |
+              echo "Fixing ownership for UID/GID 10001..."
+              chown -R 10001:10001 /loki
+              chmod -R 755 /loki
+              echo "Done. Listing /loki:"
+              ls -la /loki
+          securityContext:
+            runAsUser: 0
+          volumeMounts:
+            - name: loki-storage
+              mountPath: /loki
+      volumes:
+        - name: loki-storage
+          persistentVolumeClaim:
+            claimName: loki-data

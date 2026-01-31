@@ -1,0 +1,14 @@
+# Netplan: два Ethernet з DHCP на beelinkeqr5 (Ubuntu 24)
+# Інтерфейси: enp1s0, eno1 (altname enp2s0)
+# Копіювати на ноду: sudo cp beelinkeqr5-netplan-dual-eth-dhcp.yaml /etc/netplan/01-dual-eth-dhcp.yaml
+# Потім: sudo netplan apply
+
+network:
+  version: 2
+  ethernets:
+    enp1s0:
+      dhcp4: true
+      optional: true
+    eno1:
+      dhcp4: true
+      optional: true
