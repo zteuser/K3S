@@ -198,10 +198,14 @@ sudo nft list ruleset
    ```
    Якщо тут є відповідь, а з work-node — ні, проблема в маршрутизації/форвардингу між нодами (work-node ↔ macmini7).
 
-2. **На work-node** переконатися, що ACCEPT для 10.42/10.43 у FORWARD стоять **першими**:
+2. **На work-node** ACCEPT для 10.42/10.43 мають стояти **перед** KUBE-ROUTER-FORWARD. Якщо першим йде KUBE-ROUTER-FORWARD — трафік від подів до CoreDNS відкидається. Вставити правила на початок FORWARD:
    ```bash
-   sudo iptables -L FORWARD -n -v | head -12
+   sudo iptables -I FORWARD 1 -d 10.43.0.0/16 -j ACCEPT
+   sudo iptables -I FORWARD 1 -s 10.43.0.0/16 -j ACCEPT
+   sudo iptables -I FORWARD 1 -d 10.42.0.0/16 -j ACCEPT
+   sudo iptables -I FORWARD 1 -s 10.42.0.0/16 -j ACCEPT
    ```
+   Перевірка: `sudo iptables -L FORWARD -n -v | head -12` — спочатку мають бути 4× ACCEPT, потім KUBE-ROUTER-FORWARD.
 
 3. **DNS по TCP** (щоб виключити проблему лише з UDP): з пода на work-node спробувати `dig @10.43.0.10 kubernetes.default.svc.cluster.local +tcp` (образ з dig) або перезапустити CoreDNS і повторити nslookup.
 
