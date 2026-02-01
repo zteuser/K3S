@@ -171,6 +171,79 @@ sudo systemctl restart k3s
 
 ---
 
+## Якщо beelinkeqr5 лишається NotReady (rejected 192.168.100.1 / 192.168.100.6)
+
+Коли macmini7 і master-node вже **Ready**, etcd **Healthy**, а beelinkeqr5 — **NotReady** і в логах beelinkeqr5 лише "rejected … remote-addr: 192.168.100.1" та "192.168.100.6", це означає, що **beelinkeqr5** як сервер відхиляє вхідні з’єднання від macmini7. Можливі причини: (1) peer URL beelinkeqr5 в etcd member list не збігається з адресою, з якої інші ноди до нього підключаються; (2) сертифікат macmini7 після rotate не містить 192.168.100.1 / 192.168.100.6.
+
+### Крок A. Перевірити сертифікат macmini7 (на macmini7)
+
+Переконатися, що etcd peer-сертифікат macmini7 містить 192.168.100.1 і 192.168.100.6:
+
+```bash
+sudo openssl x509 -in /var/lib/rancher/k3s/server/tls/etcd/peer-server-client.crt -noout -text | grep -A1 "Subject Alternative Name"
+```
+
+У виводі мають бути IP: 192.168.100.1 та 192.168.100.6 (або в рядку DNS Name / IP Address). Якщо їх немає — на macmini7 знову виконати `sudo k3s certificate rotate --service etcd` і `sudo systemctl restart k3s`.
+
+### Крок B. Оновити peer URL beelinkeqr5 (і за потреби macmini7) в etcd
+
+Виконувати **на macmini7** (де etcd працює і є кворум):
+
+```bash
+# 1. Список членів — знайти MEMBER_ID для beelinkeqr5 та macmini7
+sudo env ETCDCTL_API=3 \
+  ETCDCTL_ENDPOINTS='https://127.0.0.1:2379' \
+  ETCDCTL_CACERT=/var/lib/rancher/k3s/server/tls/etcd/server-ca.crt \
+  ETCDCTL_CERT=/var/lib/rancher/k3s/server/tls/etcd/server-client.crt \
+  ETCDCTL_KEY=/var/lib/rancher/k3s/server/tls/etcd/server-client.key \
+  etcdctl member list
+```
+
+У виводі буде щось на кшталт:
+- `... beelinkeqr5-... https://192.168.1.19:2380` або `https://192.168.2.x:2380`
+- `... macmini7-... https://192.168.2.19:2380`
+
+Оновити **beelinkeqr5** так, щоб його peer URL була адреса, за якою до нього підключаються (у вашому випадку з beelinkeqr5 прийходять з’єднання з source 192.168.100.1/192.168.100.6, тобто підключаються **до** beelinkeqr5; для beelinkeqr5 потрібно вказати URL, за яким інші ноди його досягають — зазвичай **192.168.100.2** або **192.168.1.19**). Якщо інші ноди підключаються до beelinkeqr5 по 192.168.100.2 — встановіть peer URL **https://192.168.100.2:2380**:
+
+```bash
+# 2. Підставити MEMBER_ID beelinkeqr5 (перше поле з member list)
+sudo env ETCDCTL_API=3 \
+  ETCDCTL_ENDPOINTS='https://127.0.0.1:2379' \
+  ETCDCTL_CACERT=/var/lib/rancher/k3s/server/tls/etcd/server-ca.crt \
+  ETCDCTL_CERT=/var/lib/rancher/k3s/server/tls/etcd/server-client.crt \
+  ETCDCTL_KEY=/var/lib/rancher/k3s/server/tls/etcd/server-client.key \
+  etcdctl member update BEELINKEQR5_MEMBER_ID --peer-urls="https://192.168.100.2:2380"
+```
+
+Якщо з’єднання до beelinkeqr5 йдуть по **192.168.1.19**, використовуйте `--peer-urls="https://192.168.1.19:2380"`.
+
+Опціонально: якщо peer URL **macmini7** зараз 192.168.2.19, а фактичні з’єднання до macmini7 мають source 192.168.100.1, оновіть macmini7 на 192.168.100.1 (підставити MEMBER_ID macmini7):
+
+```bash
+sudo env ETCDCTL_API=3 \
+  ETCDCTL_ENDPOINTS='https://127.0.0.1:2379' \
+  ETCDCTL_CACERT=/var/lib/rancher/k3s/server/tls/etcd/server-ca.crt \
+  ETCDCTL_CERT=/var/lib/rancher/k3s/server/tls/etcd/server-client.crt \
+  ETCDCTL_KEY=/var/lib/rancher/k3s/server/tls/etcd/server-client.key \
+  etcdctl member update MACMINI7_MEMBER_ID --peer-urls="https://192.168.100.1:2380"
+```
+
+(Якщо один член має кілька адрес досяжності, можна передати кілька URL через кому: `--peer-urls="https://192.168.100.1:2380,https://192.168.2.19:2380"`.)
+
+### Крок C. Перезапустити k3s на beelinkeqr5
+
+Після оновлення peer URL:
+
+```bash
+# На beelinkeqr5
+sudo systemctl restart k3s
+sudo systemctl status k3s
+```
+
+Через 1–2 хв перевірити з macmini7: `kubectl get nodes -o wide` — beelinkeqr5 має стати Ready.
+
+---
+
 ## Підсумок
 
 | Крок | Де | Дія |
