@@ -39,7 +39,9 @@ data:
       reject_old_samples: false
       reject_old_samples_max_age: 168h   # приймати записи до 7 днів (backlog після простою Loki)
     ingester:
-      max_chunk_age: 12h   # вік чанку; вікно out-of-order = max_chunk_age/2 = 6h (щоб приймати backlog після рестарту)
+      # Вікно out-of-order = max_chunk_age/2. Якщо стрим вже має новіші записи, старі відхиляються з "entry too far behind".
+      # 24h → вікно 12h, щоб приймати backlog після простою Loki/Promtail (напр. журнали з macmini7).
+      max_chunk_age: 24h
 
     schema_config:
       configs:

@@ -78,3 +78,31 @@ kubectl -n monitoring delete pod -l app=loki
 | 4 | Перевірити: `kubectl -n monitoring get pods -l app=loki` — статус Running |
 
 Після цього Loki має запускатися без "permission denied" у tsdb-shipper-cache.
+
+---
+
+## Readiness 503 та "entry too far behind"
+
+### Readiness probe 503
+
+Под у статусі Running, але в Events — **Readiness probe failed: HTTP 503**. Це тимчасово: Loki стає ready після WAL recovery та приєднання ingester до ring (~2–3 хв після старту). У deployment вже задано `readinessProbe.initialDelaySeconds: 90` та `failureThreshold: 18` — якщо після застосування манифестів проблема лишається, просто почекайте кілька хвилин або перезапустіть под.
+
+### "entry too far behind"
+
+У логах: `entry too far behind, oldest acceptable timestamp is: ... for stream {job="journal", nodename="macmini7", ...}`. Це **не** керується `reject_old_samples` / `reject_old_samples_max_age`. Вікно прийому старих записів для стриму = **max_chunk_age/2** (out-of-order window). Якщо стрим уже має новіші записи, вхідні записи старіші за (найновіший_запис − max_chunk_age/2) відхиляються.
+
+У `configmap.yaml` задано `ingester.max_chunk_age: 24h` (вікно 12h), щоб приймати backlog після простою Loki або Promtail.
+
+**Застосування оновлень і перезапуск Loki:**
+
+```bash
+# Застосувати ConfigMap і Deployment
+kubectl apply -f manifests/monitoring/loki/configmap.yaml
+kubectl apply -f manifests/monitoring/loki/deployment.yaml
+
+# Перезапустити под, щоб підхопити новий config
+kubectl -n monitoring delete pod -l app=loki
+
+# Перевірити логи (помилки "entry too far behind" мають зменшитися після збільшення max_chunk_age)
+kubectl -n monitoring logs -l app=loki -f --tail=100
+```
