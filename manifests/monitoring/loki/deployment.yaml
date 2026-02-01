@@ -89,9 +89,9 @@ spec:
           httpGet:
             path: /ready
             port: 3100
-          initialDelaySeconds: 60
+          initialDelaySeconds: 90
           periodSeconds: 10
-          failureThreshold: 12
+          failureThreshold: 18
           timeoutSeconds: 10
       volumes:
       - name: loki-config

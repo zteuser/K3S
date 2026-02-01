@@ -36,6 +36,10 @@ data:
 
     limits_config:
       retention_period: 168h   # 7 днів
+      reject_old_samples: false
+      reject_old_samples_max_age: 168h   # приймати записи до 7 днів (backlog після простою Loki)
+    ingester:
+      max_chunk_age: 12h   # вік чанку; вікно out-of-order = max_chunk_age/2 = 6h (щоб приймати backlog після рестарту)
 
     schema_config:
       configs:
