@@ -244,6 +244,66 @@ sudo systemctl status k3s
 
 ---
 
+## Якщо beelinkeqr5: "authentication handshake failed" / "request timed out"
+
+Після оновлення peer URL beelinkeqr5 на 192.168.100.2 у логах beelinkeqr5 можуть з’явитися замість "rejected connection":
+
+- `transport: authentication handshake failed: context deadline exceeded`
+- `failed to publish local member to cluster through raft` з `error: etcdserver: request timed out`
+
+Це означає, що **beelinkeqr5 не встигає пройти TLS/raft до інших пірів** або не може до них досягнути (outbound).
+
+**Що зробити:**
+
+### 1. На beelinkeqr5: перегенерувати etcd-сертифікат і перезапустити
+
+Щоб macmini7 і master-node приймали з’єднання **від** beelinkeqr5 (source 192.168.100.2), сертифікат beelinkeqr5 має містити 192.168.100.2 у SAN. Після додавання в config лише `tls-san: 192.168.100.2` потрібно виконати rotate і перезапуск:
+
+```bash
+# На beelinkeqr5
+sudo k3s certificate rotate --service etcd
+sudo systemctl restart k3s
+sudo systemctl status k3s
+```
+
+### 2. Peer URL має бути адресою, де etcd **слухає** (не source IP)
+
+**Важливо:** Peer URL у member list — це адреса, **на якій цей член etcd приймає з’єднання** (де слухає порт 2380). Це **не** source IP трафіку. Якщо змінити macmini7 peer URL на 192.168.100.1, а etcd на macmini7 слухає лише на 192.168.2.19, то з’єднання до 192.168.100.1:2380 отримають **Connection refused** і кворум розсипається.
+
+Перед зміною peer URL перевірте з іншої ноди: `nc -zv <IP> 2380` — має бути **succeeded**. Якщо **Connection refused** — на цій IP ніхто не слухає 2380, не використовуйте її в peer URL.
+
+**Не змінюйте** macmini7 peer URL на 192.168.100.1, якщо на 192.168.100.1 порт 2380 не слухає (nc — Connection refused).
+
+---
+
+## Якщо після зміни peer URL macmini7 на 192.168.100.1 etcd розсипався
+
+Якщо ви змінили macmini7 peer URL на **https://192.168.100.1:2380**, а на 192.168.100.1 ніхто не слухає порт 2380 (nc — Connection refused), то master-node і macmini7 не зможуть підключатися до macmini7 за member list → кворум втрачається, kubectl — ServiceUnavailable / Timeout.
+
+**Відкотити peer URL macmini7 назад на 192.168.2.19** (адреса, де etcd на macmini7 реально слухає). Виконати **на macmini7** (etcd може ще відповідати локально):
+
+```bash
+sudo env ETCDCTL_API=3 \
+  ETCDCTL_ENDPOINTS='https://127.0.0.1:2379' \
+  ETCDCTL_CACERT=/var/lib/rancher/k3s/server/tls/etcd/server-ca.crt \
+  ETCDCTL_CERT=/var/lib/rancher/k3s/server/tls/etcd/server-client.crt \
+  ETCDCTL_KEY=/var/lib/rancher/k3s/server/tls/etcd/server-client.key \
+  etcdctl member update 48c9a1862f44c505 --peer-urls="https://192.168.2.19:2380"
+```
+
+Якщо 2379 не відповідає, спробуйте порт **2382**: `ETCDCTL_ENDPOINTS='https://127.0.0.1:2382'`.
+
+Після успішного update перезапустити k3s **на всіх трьох** нодах (спочатку macmini7, потім master-node, потім beelinkeqr5):
+
+```bash
+# На кожній ноді
+sudo systemctl restart k3s
+```
+
+Через 1–2 хв перевірити: `kubectl get nodes -o wide`, `kubectl get cs` — кворум має повернутися (macmini7 і master-node Ready; beelinkeqr5 — окремо вирішувати через tls-san/rotate).
+
+---
+
 ## Підсумок
 
 | Крок | Де | Дія |
