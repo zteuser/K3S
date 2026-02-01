@@ -24,9 +24,11 @@ ping -c 1 10.0.10.10      # з beelinkeqr5 — має відповідати (я
 
 ## 2. На master-node: задати Node IP 10.0.10.10
 
-K3s визначає Internal-IP ноди з інтерфейсів або з параметра **`--node-ip`** / змінної **`K3S_NODE_IP`**. Потрібно зафіксувати IP **10.0.10.10**.
+K3s визначає Internal-IP ноди з інтерфейсів або з параметра **`--node-ip`** / змінної **`K3S_NODE_IP`** / опції **`node-ip`** у **config.yaml**. Потрібно зафіксувати IP **10.0.10.10**.
 
-### Варіант A: systemd override (рекомендовано)
+**Якщо вже пробували systemd drop-in з `K3S_NODE_IP=10.0.10.10` і Internal-IP лишилася 192.168.100.5:** на багатьох встановленнях k3s читає **config.yaml** і опція **node-ip** там має пріоритет або змінна середовища не застосовується. Використовуйте **Варіант B (config.yaml)** — він найнадійніший.
+
+### Варіант A: systemd override
 
 На **master-node** (SSH або консоль):
 
@@ -41,9 +43,25 @@ sudo systemctl restart k3s
 sudo systemctl status k3s
 ```
 
-### Варіант B: конфіг k3s
+Якщо після перезапуску `kubectl get nodes -o wide` все ще показує master-node з 192.168.100.5 — перейдіть до **Варіанту B**.
 
-Якщо k3s вже використовує конфіг (наприклад `/etc/rancher/k3s/config.yaml`), додайте туди:
+### Варіант B: конфіг k3s (рекомендовано, якщо A не спрацював)
+
+На **master-node** перевірте наявність конфігу і опції **node-ip**:
+
+```bash
+cat /etc/rancher/k3s/config.yaml
+```
+
+Якщо файлу немає — створіть; якщо є — додайте або **замініть** рядок `node-ip:` на **10.0.10.10** (щоб не залишилося `node-ip: 192.168.100.5`):
+
+```bash
+# Якщо config.yaml вже існує — відредагуйте вручну або:
+sudo sed -i '/^node-ip:/d' /etc/rancher/k3s/config.yaml   # видалити старий node-ip
+echo 'node-ip: 10.0.10.10' | sudo tee -a /etc/rancher/k3s/config.yaml
+```
+
+Або вручну відредагуйте `/etc/rancher/k3s/config.yaml` — має бути рядок (лише один):
 
 ```yaml
 node-ip: 10.0.10.10
@@ -54,6 +72,8 @@ node-ip: 10.0.10.10
 ```bash
 sudo systemctl restart k3s
 ```
+
+Через 1–2 хв перевірте: `kubectl get nodes -o wide` — master-node має показувати INTERNAL-IP **10.0.10.10**.
 
 ### Варіант C: існуючий ExecStart
 
