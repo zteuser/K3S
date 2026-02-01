@@ -167,6 +167,40 @@ sudo systemctl restart k3s
 
 Через 1–2 хв перевірте логи на master-node — повідомлення про "192.168.100.2 does not match" мають зникнути; піри будуть підключатися до 10.0.10.10, source IP буде 192.168.1.19 / 192.168.2.19.
 
+### 4.2 "rejected connection" на macmini7 — remote-addr 192.168.100.5
+
+Якщо в логах **на macmini7** з’являється:
+
+```text
+rejected connection on peer endpoint, remote-addr: 192.168.100.5:...
+tls: "192.168.100.5" does not match any of DNSNames [kine.sock, localhost, master-node]
+```
+
+Це означає, що **master-node** (з IP 192.168.100.5) підключається до etcd на **macmini7**, але клієнтський сертифікат master-node не містить 192.168.100.5 у SAN — тому macmini7 відхиляє з’єднання.
+
+**Рішення:** додати **192.168.100.5** до SAN etcd-сертифікатів на **master-node** (нода, з якої йде з’єднання).
+
+**На master-node:**
+
+```bash
+# 1. Відкрити/створити конфіг k3s
+sudo nano /etc/rancher/k3s/config.yaml
+# або:
+sudo tee -a /etc/rancher/k3s/config.yaml << 'EOF'
+tls-san: 192.168.100.5
+EOF
+
+# 2. Перегенерувати etcd-сертифікати
+sudo k3s certificate rotate --service etcd
+
+# 3. Перезапустити k3s
+sudo systemctl restart k3s
+```
+
+Після перезапуску master-node підключення до etcd на macmini7 з source IP 192.168.100.5 будуть прийматися. Логи на macmini7 більше не повинні показувати "192.168.100.5 does not match".
+
+---
+
 ### 4.1 Якщо після оновлення peer URL помилка "192.168.100.2 does not match" лишається
 
 Якщо маршрут від **beelinkeqr5** (або macmini7) до master-node **10.0.10.10** все одно проходить через шлюз **192.168.100.2**, то на master-node вхідне з’єднання матиме source IP 192.168.100.2 і etcd відхилятиме його (TLS: сертифікат піра не містить 192.168.100.2).
