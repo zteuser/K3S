@@ -7,6 +7,7 @@
 ## 1. Ідея схеми
 
 | Поточна схема | Нова схема (прямі тунелі) |
+
 |---------------|----------------------------|
 | macmini7 → шлюз 192.168.2.1 (VRN625) → WG на роутері → Amper | macmini7 → **власний WG-клієнт** → Amper master/worker |
 | beelinkeqr5 → шлюз 192.168.1.1 (Syhiv17) → WG на роутері → Amper | beelinkeqr5 → **власний WG-клієнт** → Amper master/worker |
@@ -36,6 +37,7 @@
 **Два WG-інтерфейси на кожному Amper:**
 
 | Інтерфейс | Призначення | Amper master (порт) | Amper worker (порт) |
+
 |-----------|-------------|----------------------|----------------------|
 | **wg2** | Тільки macmini7 (192.168.2.0/24) | ListenPort **51824** | ListenPort **51825** |
 | **wg3** | Тільки beelinkeqr5 (192.168.1.0/24) | ListenPort **51826** | ListenPort **51827** |
@@ -159,15 +161,115 @@ PersistentKeepalive = 25
 
 ---
 
-## 4. Ключі та підготовка
+## 4. Ключі: детальна інструкція
 
-Згенерувати **окремі** пари ключів для:
+Потрібно **шість окремих пар** ключів WireGuard (приватний + публічний для кожного). Кожна пара використовується лише на одному інтерфейсі / одному хості.
 
-- Amper master **wg2**, Amper master **wg3**,
-- Amper worker **wg2**, Amper worker **wg3**,
-- **macmini7**, **beelinkeqr5**.
+### 4.1 Де генерувати
 
-На кожному пристрої: `wg genkey | tee privatekey | wg pubkey > publickey`. Публічні ключі розподілити згідно з конфігами вище (macmini7 підключається до wg2 на обох Amper, beelinkeqr5 — до wg3).
+- **Варіант A:** на кожному пристрої окремо (Amper master, Amper worker, macmini7, beelinkeqr5) — тоді приватний ключ одразу залишається на пристрої, публічний потрібно скопіювати на інші машини.
+- **Варіант B:** централізовано на одній машині (наприклад ваш ноутбук з `wg`), згенерувати всі шість пар, потім розподілити: **приватний** — тільки на той пристрій/інтерфейс, де він буде в конфігу; **публічний** — на ті пристрої, у конфігах яких цей ключ буде в [Peer] PublicKey.
+
+Нижче — команди для генерації; таблиця (п. 4.4) показує, хто куди кладе кожен ключ.
+
+### 4.2 Генерація однієї пари ключів (Linux / macOS з WireGuard)
+
+На машині, де встановлено `wg` (wireguard-tools):
+
+```bash
+# Приватний ключ — генерується і зберігається
+wg genkey
+
+# Зберегти приватний у файл і одразу отримати публічний
+wg genkey | tee privatekey | wg pubkey > publickey
+```
+
+Після виконання: у поточній директорії з’являться файли **privatekey** (тримати в таємниці) і **publickey** (можна передавати).
+
+**Одна пара для одного інтерфейсу/хоста:** для кожної з шести сутностей виконати генерацію **окремо** і одразу підписати файли, щоб не переплутати (див. п. 4.3).
+
+### 4.3 Генерація всіх шести пар (приклад на одній машині)
+
+Створити тимчасову директорію і для кожної сутності згенерувати пару з понятними іменами:
+
+```bash
+mkdir -p /tmp/wg-keys-direct && cd /tmp/wg-keys-direct
+
+# 1. Amper master wg2
+wg genkey | tee amper-master-wg2.private | wg pubkey > amper-master-wg2.public
+
+# 2. Amper master wg3
+wg genkey | tee amper-master-wg3.private | wg pubkey > amper-master-wg3.public
+
+# 3. Amper worker wg2
+wg genkey | tee amper-worker-wg2.private | wg pubkey > amper-worker-wg2.public
+
+# 4. Amper worker wg3
+wg genkey | tee amper-worker-wg3.private | wg pubkey > amper-worker-wg3.public
+
+# 5. macmini7 (один ключ для його WG-інтерфейсу)
+wg genkey | tee macmini7.private | wg pubkey > macmini7.public
+
+# 6. beelinkeqr5
+wg genkey | tee beelinkeqr5.private | wg pubkey > beelinkeqr5.public
+
+# Перевірка: 6 приватних і 6 публічних
+ls -la *.private *.public
+```
+
+Вміст публічного ключа — один рядок, наприклад `abc123...xyz=`. У конфіги підставляти **саме цей рядок** (без пробілів і переносів).
+
+### 4.4 Хто куди підставляє ключі
+
+| Конфіг (файл / інтерфейс) | [Interface] PrivateKey | [Peer] PublicKey (кого підключаємо) |
+
+|---------------------------|------------------------|--------------------------------------|
+| **Amper master** wg2.conf | amper-master-wg2.private | macmini7.public |
+| **Amper master** wg3.conf | amper-master-wg3.private | beelinkeqr5.public |
+| **Amper worker** wg2.conf | amper-worker-wg2.private | macmini7.public |
+| **Amper worker** wg3.conf | amper-worker-wg3.private | beelinkeqr5.public |
+| **macmini7** (один WG-конфіг) | macmini7.private | у першому [Peer]: amper-master-wg2.public; у другому [Peer]: amper-worker-wg2.public |
+| **beelinkeqr5** (один WG-конфіг) | beelinkeqr5.private | у першому [Peer]: amper-master-wg3.public; у другому [Peer]: amper-worker-wg3.public |
+
+Тобто:
+
+- **Приватний** amper-master-wg2 — тільки в `/etc/wireguard/wg2.conf` на **Amper master** (в [Interface]).
+- **Публічний** macmini7 — в **wg2.conf** на Amper master і на Amper worker (в [Peer] для macmini7).
+- **Приватний** macmini7 — тільки на **macmini7** у його WG-конфігу; **публічні** amper-master-wg2 і amper-worker-wg2 — на macmini7 у двох [Peer].
+
+### 4.5 Приклад підстановки в конфіг
+
+У конфігу замість плейсхолдера підставити **вміст** відповідного файлу (один рядок):
+
+```bash
+# Приклад: отримати рядок для PrivateKey у wg2.conf на Amper master
+cat amper-master-wg2.private
+# Вивід скопіювати в конфіг: PrivateKey = <тут_вміст>
+```
+
+У [Interface]: `PrivateKey = <вміст_файлу.private>`.  
+У [Peer]: `PublicKey = <вміст_файлу.public>`.
+
+Пробіли в кінці рядка обрізати; у ключі не має бути переносів рядка.
+
+### 4.6 Генерація без wireguard-tools (тільки OpenSSL)
+
+Якщо на машині немає `wg`, але є `openssl`:
+
+```bash
+# Приватний ключ WireGuard — 32 байти base64
+openssl rand -base64 32
+
+# Публічний з приватного: WireGuard використовує X25519. Без wg pubkey отримати публічний ключ з openssl складніше; краще встановити wireguard-tools.
+```
+
+Рекомендовано встановити **wireguard-tools** (`wg genkey` / `wg pubkey`) на хостах Amper та, за можливості, на macmini7/beelinkeqr5 для генерації та перевірки.
+
+### 4.7 Безпека
+
+- **Приватні ключі** не передавати по незахищеним каналам; не комітити в git. На Amper класти в `/etc/wireguard/*.conf` з правами `chmod 600`.
+- Публічні ключі можна передавати по SSH, скопіювати в конфіги вручну.
+- Після розподілу ключів тимчасову директорію з приватними ключами видалити: `shred -u /tmp/wg-keys-direct/*.private` (або використати вже скопійовані значення в конфігах і потім видалити файли).
 
 ---
 
@@ -176,6 +278,7 @@ PersistentKeepalive = 25
 На master і worker відкрити **UDP** для wg2 і wg3:
 
 | Хост | Порт | Інтерфейс |
+
 |------|------|-----------|
 | Amper master | **51824** | wg2 (macmini7) |
 | Amper master | **51826** | wg3 (beelinkeqr5) |
@@ -245,7 +348,7 @@ PostDown = iptables -D INPUT -i wg2 -j ACCEPT; iptables -D FORWARD -i wg2 -o enp
 У **`/etc/rancher/k3s/config.yaml`** на усіх control-plane нодах достатньо:
 
 - **tls-san:** лише **10.0.10.10**, **192.168.2.19**, **192.168.1.19** (тунельні 192.168.100.x не потрібні).
-- **Peer URL etcd:** як і раніше https://10.0.10.10:2380, https://192.168.2.19:2380, https://192.168.1.19:2380.
+- **Peer URL etcd:** як і раніше [https://10.0.10.10:2380], [https://192.168.2.19:2380], [https://192.168.1.19:2380].
 
 Node IP (InternalIP) залишаються 10.0.10.10, 10.0.10.20, 192.168.2.19, 192.168.1.19.
 
@@ -275,6 +378,7 @@ Node IP (InternalIP) залишаються 10.0.10.10, 10.0.10.20, 192.168.2.19
 ## 10. Підсумок
 
 | Елемент | Дія |
+
 |--------|-----|
 | **macmini7** | WG-клієнт, 2 peer (Amper master **wg2** :51824, worker **wg2** :51825), AllowedIPs 10.0.10.0/24, 192.168.1.0/24 |
 | **beelinkeqr5** | WG-клієнт, 2 peer (Amper master **wg3** :51826, worker **wg3** :51827), AllowedIPs 10.0.10.0/24, 192.168.2.0/24 |
