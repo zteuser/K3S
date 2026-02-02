@@ -222,7 +222,6 @@ ls -la *.private *.public
 ### 4.4 Хто куди підставляє ключі
 
 | Конфіг (файл / інтерфейс) | [Interface] PrivateKey | [Peer] PublicKey (кого підключаємо) |
-
 |---------------------------|------------------------|--------------------------------------|
 | **Amper master** wg2.conf | amper-master-wg2.private | macmini7.public |
 | **Amper master** wg3.conf | amper-master-wg3.private | beelinkeqr5.public |
