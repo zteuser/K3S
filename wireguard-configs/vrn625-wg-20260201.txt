@@ -1,0 +1,32 @@
+# VRN625 (Vernadskogo25) — 192.168.2.1 — Ubiquiti UCG Ultra — 2026-02-01
+
+## wg showconf wgclt1
+[Interface]
+ListenPort = 36091
+PrivateKey = (hidden)
+
+[Peer]
+PublicKey = +H5s2Os168053hH0ToZwV/QAac94tohuvkTvBt5bvG4=
+AllowedIPs = 0.0.0.0/0
+Endpoint = 141.144.254.42:51821
+PersistentKeepalive = 60
+ForcedHandshake = 5
+
+## wg showconf wgclt2
+[Interface]
+ListenPort = 49669
+PrivateKey = (hidden)
+
+[Peer]
+PublicKey = foEgGPYbtAPqzTucJXpmHtIEkZ+vXG693z56VhojGHU=
+AllowedIPs = 0.0.0.0/0
+Endpoint = 141.147.58.119:51823
+PersistentKeepalive = 60
+ForcedHandshake = 5
+
+## netstat -rn
+Destination     Gateway         Genmask         Flags   MSS Window  irtt Iface
+100.70.0.0      0.0.0.0         255.254.0.0     U         0 0          0 eth4
+192.168.2.0     0.0.0.0         255.255.255.0   U         0 0          0 br0
+
+Note: Маршрутів 192.168.100.0/30 та 192.168.200.0/30 у виводі немає — можливо інший таблиця або інтерфейси wgclt1/wgclt2 отримують Address через UI.

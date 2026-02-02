@@ -1,0 +1,43 @@
+# Amper master (master-node) — 10.0.10.10 — 2026-02-01
+
+## wg0.conf
+[Interface]
+Address = 192.168.100.1/30
+MTU = 1412
+SaveConfig = true
+PostUp = /etc/wireguard/helper/add-nat-routing-wg0.sh
+PostDown = /etc/wireguard/helper/remove-nat-routing-wg0.sh
+ListenPort = 51820
+PrivateKey = (hidden)
+
+[Peer]
+PublicKey = YFu7Ezrd+oja6wRhLxOh/sxpBX3W4bzkKlZEYi8Upy0=
+AllowedIPs = 192.168.100.0/30, 192.168.1.1/32, 192.168.1.19/32, 192.168.1.53/32, 192.168.1.154/32
+Endpoint = 45.12.26.162:57443
+PersistentKeepalive = 25
+
+## wg1.conf
+[Interface]
+Address = 192.168.100.5/30
+MTU = 1412
+SaveConfig = true
+PostUp = /etc/wireguard/helper/add-nat-routing-wg1.sh
+PostDown = /etc/wireguard/helper/remove-nat-routing-wg1.sh
+ListenPort = 51821
+PrivateKey = (hidden)
+
+[Peer]
+PublicKey = B0ZRB/sFfqnwGdE7iyGSNkrVpm+NIP5y8h2BfdBRplo=
+AllowedIPs = 192.168.100.4/30, 192.168.2.1/32, 192.168.2.19/32, 192.168.2.155/32, 192.168.2.198/32
+Endpoint = 178.136.42.156:17557
+PersistentKeepalive = 25
+
+## helper scripts
+add-nat-routing-wg0.sh: SUB_NET=192.168.100.0/30, MASQUERADE -s SUB_NET -o enp0s6, FORWARD wg0<->enp0s6, wg0<->wg1
+add-nat-routing-wg1.sh: SUB_NET=192.168.100.4/30, MASQUERADE -s SUB_NET -o enp0s6, FORWARD wg1<->enp0s6, wg1<->wg0
+
+## wg show
+interface: wg1 — listening port: 51821
+  peer B0ZRB... → endpoint 178.136.42.156:17557, allowed 192.168.100.4/30, 192.168.2.x
+interface: wg0 — listening port: 51820
+  peer YFu7Ezrd... → endpoint 45.12.26.162:57443, allowed 192.168.100.0/30, 192.168.1.x

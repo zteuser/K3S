@@ -1,0 +1,33 @@
+# Syhiv17 (Syhiv17-25) — 192.168.1.1 — Ubiquiti UCG Ultra — 2026-02-01
+
+## wg showconf wgclt1
+[Interface]
+ListenPort = 57443
+PrivateKey = (hidden)
+
+[Peer]
+PublicKey = +H5s2Os168053hH0ToZwV/QAac94tohuvkTvBt5bvG4=
+AllowedIPs = 0.0.0.0/0
+Endpoint = 141.144.254.42:51820
+PersistentKeepalive = 60
+ForcedHandshake = 5
+
+## wg showconf wgclt2
+[Interface]
+ListenPort = 49408
+PrivateKey = (hidden)
+
+[Peer]
+PublicKey = foEgGPYbtAPqzTucJXpmHtIEkZ+vXG693z56VhojGHU=
+AllowedIPs = 0.0.0.0/0
+Endpoint = 141.147.58.119:51822
+PersistentKeepalive = 60
+ForcedHandshake = 5
+
+## netstat -rn
+Destination     Gateway         Genmask         Flags   MSS Window  irtt Iface
+10.1.1.1        0.0.0.0         255.255.255.255 UH        0 0          0 ppp2
+100.66.0.1      0.0.0.0         255.255.255.255 UH        0 0          0 ppp0
+192.168.1.0     0.0.0.0         255.255.255.0   U         0 0          0 br0
+192.168.100.0   0.0.0.0         255.255.255.252 U         0 0          0 wgclt1
+192.168.200.0   0.0.0.0         255.255.255.252 U         0 0          0 wgclt2
