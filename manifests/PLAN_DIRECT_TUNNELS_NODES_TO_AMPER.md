@@ -7,8 +7,7 @@
 ## 1. Ідея схеми
 
 | Поточна схема | Нова схема (прямі тунелі) |
-
-|---------------|----------------------------|
+| --------------- | ---------------------------- |
 | macmini7 → шлюз 192.168.2.1 (VRN625) → WG на роутері → Amper | macmini7 → **власний WG-клієнт** → Amper master/worker |
 | beelinkeqr5 → шлюз 192.168.1.1 (Syhiv17) → WG на роутері → Amper | beelinkeqr5 → **власний WG-клієнт** → Amper master/worker |
 | Source IP на приймачі = тунель роутера (192.168.100.6, 192.168.100.2) | Source IP = **192.168.2.19**, **192.168.1.19** (без NAT) |
@@ -37,8 +36,7 @@
 **Два WG-інтерфейси на кожному Amper:**
 
 | Інтерфейс | Призначення | Amper master (порт) | Amper worker (порт) |
-
-|-----------|-------------|----------------------|----------------------|
+| ----------- | ------------- | ---------------------- | ---------------------- |
 | **wg2** | Тільки macmini7 (192.168.2.0/24) | ListenPort **51824** | ListenPort **51825** |
 | **wg3** | Тільки beelinkeqr5 (192.168.1.0/24) | ListenPort **51826** | ListenPort **51827** |
 
@@ -222,7 +220,7 @@ ls -la *.private *.public
 ### 4.4 Хто куди підставляє ключі
 
 | Конфіг (файл / інтерфейс) | [Interface] PrivateKey | [Peer] PublicKey (кого підключаємо) |
-| --------------------------- | ------------------------ |-------------------------------------- |
+| --------------------------- | ------------------------ | -------------------------------------- |
 | **Amper master** wg2.conf | amper-master-wg2.private | macmini7.public |
 | **Amper master** wg3.conf | amper-master-wg3.private | beelinkeqr5.public |
 | **Amper worker** wg2.conf | amper-worker-wg2.private | macmini7.public |
@@ -277,8 +275,7 @@ openssl rand -base64 32
 На master і worker відкрити **UDP** для wg2 і wg3:
 
 | Хост | Порт | Інтерфейс |
-
-|------|------|-----------|
+| ------ | ------ | ----------- |
 | Amper master | **51824** | wg2 (macmini7) |
 | Amper master | **51826** | wg3 (beelinkeqr5) |
 | Amper worker | **51825** | wg2 (macmini7) |
@@ -377,8 +374,7 @@ Node IP (InternalIP) залишаються 10.0.10.10, 10.0.10.20, 192.168.2.19
 ## 10. Підсумок
 
 | Елемент | Дія |
-
-|--------|-----|
+| -------- | ----- |
 | **macmini7** | WG-клієнт, 2 peer (Amper master **wg2** :51824, worker **wg2** :51825), AllowedIPs 10.0.10.0/24, 192.168.1.0/24 |
 | **beelinkeqr5** | WG-клієнт, 2 peer (Amper master **wg3** :51826, worker **wg3** :51827), AllowedIPs 10.0.10.0/24, 192.168.2.0/24 |
 | **Amper master** | **wg2** (ListenPort 51824) — тільки macmini7, 192.168.2.0/24. **wg3** (ListenPort 51826) — тільки beelinkeqr5, 192.168.1.0/24. iptables: INPUT + FORWARD для wg2, wg3 (wg2↔eth0, wg3↔eth0, wg2↔wg3). Без NAT. |
