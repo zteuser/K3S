@@ -1,29 +1,37 @@
 # FRR OSPF — приклади конфігурації для mesh WireGuard + кластер k3s
 
-Документ базується на діаграмі **Syhiv VPN-3 OSPF.pdf**: OSPF Area 0 (backbone), FRR на всіх пристроях — ноди кластера (Amper master/worker, macmini7, beelinkeqr5) та роутери (VRN625, Syhiv17). Мережі тунелів WireGuard та LAN оголошуються в OSPF для динамічної маршрутизації.
+OSPF Area 0 (backbone), FRR на нодах кластера (master-node, work-node, macmini7, beelinkeqr5) та роутерах (VRN625 / Vernadskogo25, Syhiv17 / Syhiv17-25). Топологія та адресація взяті з **фактичних конфігурацій WireGuard** на пристроях.
 
 ---
 
-## 1. Топологія з діаграми (коротко)
+## 1. Топологія (з реальних конфігурацій WG)
 
-| Пристрій | Роль | LAN / OCI | WG0 (192.168.100.x/30) | WG1 (192.168.200.x/30) | WG2 (192.168.100.x/30) | WG3 (192.168.200.x/30) |
-|----------|------|-----------|-------------------------|-------------------------|-------------------------|-------------------------|
-| **Amper master** | k3s master | 10.0.10.10/24 (eth0) | wg0: .5/30 (peer .6) | wg1: .5/30 (peer .6) | wg2: .10/30 (peer macmini7 .9) | wg3: .10/30 (peer macmini7 .9) |
-| **Amper worker** | k3s worker | 10.0.10.20/24 (eth0) | wg0: .6/30 (peer .5) | wg1: .6/30 (peer .5) | wg2: .14/30 (peer beelink .13) | wg3: .14/30 (peer beelink .13) |
-| **VRN625** | роутер | 192.168.2.1/24 | wg0: .1/30 (peer .2) | wg1: .1/30 (peer .2) | — | — |
-| **Syhiv17** | роутер | 192.168.1.1/24 | wg0: .2/30 (peer .1) | wg1: .2/30 (peer .1) | — | — |
-| **macmini7** | k3s master | 192.168.2.19/24 | — | — | wg2: .9/30 (peer Amper .10) | wg3: .9/30 (peer Amper .10) |
-| **beelinkeqr5** | k3s master | 192.168.1.19/24 | — | — | wg2: .13/30 (peer Amper .14) | wg3: .13/30 (peer Amper .14) |
+**Ключове:** на **master-node** усі тунелі в діапазоні **192.168.100.x/30** (wg0–wg3). На **work-node** усі тунелі в **192.168.200.x/30** (wg0–wg3). Роутери: Syhiv17 (45.12.26.162) — master wg0, worker wg0; VRN625 (178.136.42.156) — master wg1, worker wg1. Ноди macmini7 (192.168.**1**.19) та beelinkeqr5 (192.168.**2**.19) підключені до Amper через wg2/wg3 (прямі тунелі або через NAT роутерів).
 
-**Мережі для OSPF (Area 0):**
+| Пристрій | Роль | LAN / OCI | 192.168.100.x/30 | 192.168.200.x/30 |
+|----------|------|-----------|-------------------|-------------------|
+| **master-node** | k3s master | 10.0.10.10 (141.144.254.42) | wg0 .1/30 Syhiv17, wg1 .5/30 VRN625, wg2 .9/30 beelinkeqr5, wg3 .13/30 macmini7 | — |
+| **work-node** | k3s worker | 10.0.10.20 (141.147.58.119) | — | wg0 .1/30 Syhiv17, wg1 .5/30 VRN625, wg2 .9/30 beelinkeqr5, wg3 .13/30 macmini7 |
+| **VRN625** (Vernadskogo25) | роутер | 192.168.2.1/24 | wgclt1 → master:51821 | wgclt2 → worker:51823 |
+| **Syhiv17** (Syhiv17-25) | роутер | 192.168.1.1/24 | wgclt1 → master:51820 | wgclt2 → worker:51822 |
+| **macmini7** | k3s master | **192.168.1.19**/24 | wg0 .10/30 → master:51824 (wg2) | wg1 .10/30 → worker:51825 (wg2) |
+| **beelinkeqr5** | k3s master | **192.168.2.19**/24 | wg0 .14/30 → master:51826 (wg3) | wg1 .14/30 → worker:51827 (wg3) |
 
-- 10.0.10.0/24 — OCI VLAN (Amper)
-- 192.168.1.0/24 — LAN Syhiv17 / beelinkeqr5
-- 192.168.2.0/24 — LAN VRN625 / macmini7
-- 192.168.100.0/24 — збір /30 тунелів WG0/WG2 (оголошувати підмережі або один network statement залежно від підходу)
-- 192.168.200.0/24 — збір /30 тунелів WG1/WG3
+**Порти master-node:** wg0 51820, wg1 51821, wg2 51824, wg3 51826.  
+**Порти work-node:** wg0 51822, wg1 51823, wg2 51825, wg3 51827.
 
-Нижче використовується **оголошення кожного інтерфейсу в OSPF** (network ... area 0), щоб у FRR були точні мережі. Router ID — унікальний на пристрій (наприклад 0.0.0.1 … 0.0.0.6).
+**Підмережі /30:**
+
+- **192.168.100.0/30** — master wg0 .1 ↔ Syhiv17 (wgclt1)
+- **192.168.100.4/30** — master wg1 .5 ↔ VRN625 (wgclt1)
+- **192.168.100.8/30** — master wg2 .9 ↔ macmini7 wg0 .10 (master:51824)
+- **192.168.100.12/30** — master wg3 .13 ↔ beelinkeqr5 wg0 .14 (master:51826)
+- **192.168.200.0/30** — work wg0 .1 ↔ Syhiv17 (wgclt2)
+- **192.168.200.4/30** — work wg1 .5 ↔ VRN625 (wgclt2)
+- **192.168.200.8/30** — work wg2 .9 ↔ macmini7 wg1 .10 (worker:51825)
+- **192.168.200.12/30** — work wg3 .13 ↔ beelinkeqr5 wg1 .14 (worker:51827)  
+
+**Мережі для OSPF Area 0:** 10.0.10.0/24, 192.168.1.0/24, 192.168.2.0/24, 192.168.100.0/24, 192.168.200.0/24. На кожному пристрої в OSPF оголошуються лише ті з них, які реально є на інтерфейсах (див. розділи по пристроях).
 
 ---
 
@@ -55,9 +63,9 @@ sudo vtysh -c "show running-config"
 
 Усі приклади — **Area 0** (backbone). Імена інтерфейсів (eth0, enp0s6, wg0, wg1, wg2, wg3) потрібно підставити під фактичні на кожному хості.
 
-### 3.1 Amper master (k3s master, OCI 10.0.10.10)
+### 3.1 master-node (Amper master, OCI 10.0.10.10)
 
-**Router ID:** 0.0.0.1. Інтерфейси: OCI VLAN, wg0, wg1, wg2, wg3 (якщо використовуються з адресами з діаграми).
+**Router ID:** 0.0.0.1. На master-node **лише 192.168.100.x** (wg0–wg3); інтерфейсів 192.168.200.x немає.
 
 ```bash
 sudo vtysh
@@ -65,13 +73,12 @@ sudo vtysh
 
 ```vtysh
 configure terminal
-hostname amper-master
+hostname master-node
 ip forwarding
 router ospf
  router-id 0.0.0.1
  network 10.0.10.0/24 area 0.0.0.0
  network 192.168.100.0/24 area 0.0.0.0
- network 192.168.200.0/24 area 0.0.0.0
  passive-interface default
  no passive-interface eth0
  no passive-interface wg0
@@ -84,14 +91,13 @@ write memory
 exit
 ```
 
-Еквівалент у вигляді фрагмента **/etc/frr/frr.conf** (після існуючих `service integrated-vtysh-config` та `hostname`):
+Фрагмент **/etc/frr/frr.conf**:
 
 ```conf
 router ospf
  router-id 0.0.0.1
  network 10.0.10.0/24 area 0.0.0.0
  network 192.168.100.0/24 area 0.0.0.0
- network 192.168.200.0/24 area 0.0.0.0
  passive-interface default
  no passive-interface eth0
  no passive-interface wg0
@@ -100,13 +106,13 @@ router ospf
  no passive-interface wg3
 ```
 
-Якщо основний інтерфейс OCI називається `enp0s6`, замініть `eth0` на `enp0s6`. Якщо частини WG-інтерфейсів немає (наприклад, тільки wg0/wg1), приберіть відповідні рядки `no passive-interface wg2`/`wg3`.
+Якщо основний інтерфейс OCI — `enp0s6`, замініть `eth0` на `enp0s6`.
 
 ---
 
 ### 3.2 Amper worker (k3s worker, OCI 10.0.10.20)
 
-**Router ID:** 0.0.0.2.
+**Router ID:** 0.0.0.2. На work-node лише **192.168.200.x** (wg0–wg3); 192.168.100.x немає.
 
 ```vtysh
 configure terminal
@@ -115,7 +121,6 @@ ip forwarding
 router ospf
  router-id 0.0.0.2
  network 10.0.10.0/24 area 0.0.0.0
- network 192.168.100.0/24 area 0.0.0.0
  network 192.168.200.0/24 area 0.0.0.0
  passive-interface default
  no passive-interface eth0
@@ -133,9 +138,9 @@ exit
 
 ---
 
-### 3.3 macmini7 (k3s master, LAN 192.168.2.19)
+### 3.3 macmini7 (k3s master, LAN 192.168.1.19)
 
-**Router ID:** 0.0.0.5. OSPF на LAN-інтерфейсі та на wg2, wg3 (тунелі до Amper).
+**Router ID:** 0.0.0.5. OSPF на LAN-інтерфейсі та на wg0, wg1 (тунелі до Amper: master:51824, worker:51825).
 
 ```vtysh
 configure terminal
@@ -143,13 +148,13 @@ hostname macmini7
 ip forwarding
 router ospf
  router-id 0.0.0.5
- network 192.168.2.0/24 area 0.0.0.0
+ network 192.168.1.0/24 area 0.0.0.0
  network 192.168.100.0/24 area 0.0.0.0
  network 192.168.200.0/24 area 0.0.0.0
  passive-interface default
  no passive-interface eth0
- no passive-interface wg2
- no passive-interface wg3
+ no passive-interface wg0
+ no passive-interface wg1
 exit
 exit
 write memory
@@ -160,9 +165,9 @@ exit
 
 ---
 
-### 3.4 beelinkeqr5 (k3s master, LAN 192.168.1.19)
+### 3.4 beelinkeqr5 (k3s master, LAN 192.168.2.19)
 
-**Router ID:** 0.0.0.6.
+**Router ID:** 0.0.0.6. Тунелі до Amper: master:51826 (wg0), worker:51827 (wg1).
 
 ```vtysh
 configure terminal
@@ -170,13 +175,13 @@ hostname beelinkeqr5
 ip forwarding
 router ospf
  router-id 0.0.0.6
- network 192.168.1.0/24 area 0.0.0.0
+ network 192.168.2.0/24 area 0.0.0.0
  network 192.168.100.0/24 area 0.0.0.0
  network 192.168.200.0/24 area 0.0.0.0
  passive-interface default
  no passive-interface eth0
- no passive-interface wg2
- no passive-interface wg3
+ no passive-interface wg0
+ no passive-interface wg1
 exit
 exit
 write memory
@@ -185,14 +190,14 @@ exit
 
 ---
 
-### 3.5 VRN625 (роутер, LAN 192.168.2.1, WG0/WG1)
+### 3.5 VRN625 (роутер, LAN 192.168.2.1, wgclt1/wgclt2)
 
-**Router ID:** 0.0.0.3. На UCG Ultra OSPF налаштовується через **UniFi Network Application** (Settings → Routing & Firewall → OSPF). Нижче — еквівалент для FRR (якщо на роутері доступний vtysh або імпорт конфігу).
+**Router ID:** 0.0.0.3. Endpoint master:51821 (wgclt1), worker:51823 (wgclt2). На UCG Ultra OSPF налаштовується через **UniFi Network Application** (Settings → Routing & Firewall → OSPF). Нижче — еквівалент для FRR (якщо на роутері доступний vtysh або імпорт конфігу).
 
 Потрібно в OSPF Area 0:
 
 - Інтерфейс LAN (192.168.2.0/24)
-- Інтерфейси WireGuard: 192.168.100.1/30 (wg0), 192.168.200.1/30 (wg1)
+- Інтерфейси WireGuard (wgclt1, wgclt2) — тунелі до master/worker
 
 **Через UniFi UI (рекомендовано для UCG):**
 
@@ -218,8 +223,8 @@ router ospf
  network 192.168.200.0/24 area 0.0.0.0
  passive-interface default
  no passive-interface <lan_interface>
- no passive-interface wg0
- no passive-interface wg1
+ no passive-interface wgclt1
+ no passive-interface wgclt2
 exit
 exit
 write memory
@@ -230,9 +235,9 @@ exit
 
 ---
 
-### 3.6 Syhiv17 (роутер, LAN 192.168.1.1, WG0/WG1)
+### 3.6 Syhiv17 (роутер, LAN 192.168.1.1, wgclt1/wgclt2)
 
-**Router ID:** 0.0.0.4. Аналогічно VRN625 — через UniFi UI або FRR.
+**Router ID:** 0.0.0.4. Endpoint master:51820 (wgclt1), worker:51822 (wgclt2). Аналогічно VRN625 — через UniFi UI або FRR.
 
 **UniFi UI:** Router ID **0.0.0.4**, Area **0.0.0.0**, інтерфейси: LAN 192.168.1.0/24 та WireGuard (192.168.100.0/24, 192.168.200.0/24), Redistribute Connected.
 
@@ -249,8 +254,8 @@ router ospf
  network 192.168.200.0/24 area 0.0.0.0
  passive-interface default
  no passive-interface <lan_interface>
- no passive-interface wg0
- no passive-interface wg1
+ no passive-interface wgclt1
+ no passive-interface wgclt2
 exit
 exit
 write memory
@@ -261,18 +266,16 @@ exit
 
 ## 4. Альтернатива: оголошення точних підмереж /30
 
-Якщо замість `network 192.168.100.0/24` потрібно оголошувати лише ті підмережі, що реально є на пристрої, можна використати окремі `network` для кожного /30. Приклад для **Amper master** (має .5/30 на wg0, .5/30 на wg1, .10/30 на wg2, .10/30 на wg3):
+Якщо замість `network 192.168.100.0/24` потрібно оголошувати лише ті підмережі, що реально є на пристрої, можна використати окремі `network` для кожного /30. Приклад для **Amper master** (має лише 192.168.100.x: .1 wg0, .5 wg1, .9 wg2, .13 wg3):
 
 ```vtysh
 router ospf
  router-id 0.0.0.1
  network 10.0.10.0/24 area 0.0.0.0
+ network 192.168.100.0/30 area 0.0.0.0
  network 192.168.100.4/30 area 0.0.0.0
  network 192.168.100.8/30 area 0.0.0.0
  network 192.168.100.12/30 area 0.0.0.0
- network 192.168.200.4/30 area 0.0.0.0
- network 192.168.200.8/30 area 0.0.0.0
- network 192.168.200.12/30 area 0.0.0.0
  passive-interface default
  no passive-interface eth0
  no passive-interface wg0
@@ -281,7 +284,7 @@ router ospf
  no passive-interface wg3
 ```
 
-На інших пристроях аналогічно: оголошувати лише ті 192.168.100.x/30 та 192.168.200.x/30, які реально знаходяться на локальних інтерфейсах. Це обмежує LSA та таблиці маршрутів лише потрібними підмережами.
+Для **Amper worker** — лише 192.168.200.x/30 (wg0–wg3). На інших пристроях аналогічно: оголошувати лише ті підмережі, які реально є на локальних інтерфейсах.
 
 ---
 
@@ -303,11 +306,11 @@ sudo vtysh -c "show ip route ospf"
 
 | Пристрій     | Router ID | Мережі в OSPF Area 0 |
 |--------------|-----------|------------------------|
-| Amper master | 0.0.0.1   | 10.0.10.0/24, 192.168.100.0/24, 192.168.200.0/24 |
-| Amper worker | 0.0.0.2   | 10.0.10.0/24, 192.168.100.0/24, 192.168.200.0/24 |
+| Amper master | 0.0.0.1   | 10.0.10.0/24, 192.168.100.0/24 |
+| Amper worker | 0.0.0.2   | 10.0.10.0/24, 192.168.200.0/24 |
 | VRN625       | 0.0.0.3   | 192.168.2.0/24, 192.168.100.0/24, 192.168.200.0/24 |
 | Syhiv17      | 0.0.0.4   | 192.168.1.0/24, 192.168.100.0/24, 192.168.200.0/24 |
-| macmini7     | 0.0.0.5   | 192.168.2.0/24, 192.168.100.0/24, 192.168.200.0/24 |
-| beelinkeqr5  | 0.0.0.6   | 192.168.1.0/24, 192.168.100.0/24, 192.168.200.0/24 |
+| macmini7     | 0.0.0.5   | 192.168.1.0/24, 192.168.100.0/24, 192.168.200.0/24 |
+| beelinkeqr5  | 0.0.0.6   | 192.168.2.0/24, 192.168.100.0/24, 192.168.200.0/24 |
 
 Після встановлення сусідства (Full) між усіма парами на спільних мережах у кожного роутера з’явиться повна картина маршрутів до 10.0.10.0/24, 192.168.1.0/24, 192.168.2.0/24 та тунельних підмереж, що відповідає mesh WireGuard + OSPF з діаграми Syhiv VPN-3 OSPF.
