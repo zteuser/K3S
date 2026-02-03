@@ -33,7 +33,7 @@ OSPF Area 0 (backbone), FRR на нодах кластера (master-node, work-
 
 **Мережі для OSPF Area 0:** 10.0.10.0/24, 192.168.1.0/24, 192.168.2.0/24, 192.168.100.0/24, 192.168.200.0/24. На кожному пристрої в OSPF оголошуються лише ті з них, які реально є на інтерфейсах (див. розділи по пристроях).
 
-**WireGuard і OSPF:** додавати **224.0.0.5/32, 224.0.0.6/32** у AllowedIPs на **всіх** wg* на одному хості **не можна** — виникає конфлікт маршрутів. Замість multicast використовуйте **unicast**: у FRR на кожному WG-інтерфейсі вкажіть **ip ospf neighbor &lt;IP_сусіда_на_/30&gt;** (див. розділ 5.1 і **WIREGUARD_OSPF_COMPATIBILITY_ANALYSIS.md**). На Amper також потрібні правила iptables FORWARD між wg0/wg1 та wg2/wg3 — див. **WIREGUARD_IPTABLES_HELPER_ANALYSIS.md**.
+**WireGuard і OSPF:** додавати **224.0.0.5/32, 224.0.0.6/32** у AllowedIPs на **всіх** wg* на одному хості **не можна** — виникає конфлікт маршрутів. Замість multicast використовуйте **unicast**: у FRR задайте тип мережі **point-to-multipoint non-broadcast** на WG-інтерфейсах і сусідів **під router ospf** командою **neighbor A.B.C.D** (див. розділ 5.1 і [FRR OSPFv2](https://docs.frrouting.org/en/latest/ospfd.html)). На Amper також потрібні правила iptables FORWARD між wg0/wg1 та wg2/wg3 — див. **WIREGUARD_IPTABLES_HELPER_ANALYSIS.md**.
 
 ---
 
@@ -304,26 +304,33 @@ sudo vtysh -c "show ip route ospf"
 
 ---
 
-## 5.1 Point-to-point і статичні сусіди OSPF (unicast) для WG-інтерфейсів
+## 5.1 Unicast OSPF по WireGuard: point-to-multipoint non-broadcast + neighbor під router ospf
 
-Тунелі /30 є point-to-point. Щоб OSPF працював по WireGuard **без** додавання 224.0.0.5/32 у AllowedIPs на всіх інтерфейсах (що спричиняє конфлікт маршрутів), на кожному WG-інтерфейсі задають **ip ospf network point-to-point** і **ip ospf neighbor &lt;IP_сусіда&gt;** — IP другого кінця підмережі /30. Тоді OSPF використовує **unicast** до сусіда; маршрут до цього IP уже є (AllowedIPs /30).
+У [FRR OSPFv2](https://docs.frrouting.org/en/latest/ospfd.html) команда **neighbor A.B.C.D** існує **лише під router ospf** (для NBMA та point-to-multipoint non-broadcast), а не під інтерфейсом. Команди **ip ospf neighbor** під інтерфейсом у FRR немає.
+
+Щоб OSPF слало Hello **unicast** (без 224.0.0.5 у AllowedIPs і без конфлікту маршрутів):
+
+1. На WG-інтерфейсах задати тип мережі **point-to-multipoint non-broadcast** — тоді FRR не використовує multicast і очікує явно заданих сусідів.
+2. Під **router ospf** задати **neighbor &lt;IP_сусіда_на_/30&gt;** (опційно **poll-interval**). FRR шле Hello unicast на ці IP; маршрут до них уже є (AllowedIPs /30).
 
 ### master-node (192.168.100.x)
 
 ```vtysh
 configure terminal
 interface wg0
- ip ospf network point-to-point
- ip ospf neighbor 192.168.100.2
+ ip ospf network point-to-multipoint non-broadcast
 interface wg1
- ip ospf network point-to-point
- ip ospf neighbor 192.168.100.6
+ ip ospf network point-to-multipoint non-broadcast
 interface wg2
- ip ospf network point-to-point
- ip ospf neighbor 192.168.100.10
+ ip ospf network point-to-multipoint non-broadcast
 interface wg3
- ip ospf network point-to-point
- ip ospf neighbor 192.168.100.14
+ ip ospf network point-to-multipoint non-broadcast
+exit
+router ospf
+ neighbor 192.168.100.2 poll-interval 30
+ neighbor 192.168.100.6 poll-interval 30
+ neighbor 192.168.100.10 poll-interval 30
+ neighbor 192.168.100.14 poll-interval 30
 exit
 write memory
 exit
@@ -336,34 +343,36 @@ exit
 ```vtysh
 configure terminal
 interface wg0
- ip ospf network point-to-point
- ip ospf neighbor 192.168.200.2
+ ip ospf network point-to-multipoint non-broadcast
 interface wg1
- ip ospf network point-to-point
- ip ospf neighbor 192.168.200.6
+ ip ospf network point-to-multipoint non-broadcast
 interface wg2
- ip ospf network point-to-point
- ip ospf neighbor 192.168.200.10
+ ip ospf network point-to-multipoint non-broadcast
 interface wg3
- ip ospf network point-to-point
- ip ospf neighbor 192.168.200.14
+ ip ospf network point-to-multipoint non-broadcast
+exit
+router ospf
+ neighbor 192.168.200.2 poll-interval 30
+ neighbor 192.168.200.6 poll-interval 30
+ neighbor 192.168.200.10 poll-interval 30
+ neighbor 192.168.200.14 poll-interval 30
 exit
 write memory
 exit
 ```
-
-(192.168.200.2 Syhiv17, .6 VRN625, .10 macmini7, .14 beelinkeqr5.)
 
 ### macmini7 (wg0 → master, wg1 → worker)
 
 ```vtysh
 configure terminal
 interface wg0
- ip ospf network point-to-point
- ip ospf neighbor 192.168.100.9
+ ip ospf network point-to-multipoint non-broadcast
 interface wg1
- ip ospf network point-to-point
- ip ospf neighbor 192.168.200.9
+ ip ospf network point-to-multipoint non-broadcast
+exit
+router ospf
+ neighbor 192.168.100.9 poll-interval 30
+ neighbor 192.168.200.9 poll-interval 30
 exit
 write memory
 exit
@@ -374,11 +383,13 @@ exit
 ```vtysh
 configure terminal
 interface wg0
- ip ospf network point-to-point
- ip ospf neighbor 192.168.100.13
+ ip ospf network point-to-multipoint non-broadcast
 interface wg1
- ip ospf network point-to-point
- ip ospf neighbor 192.168.200.13
+ ip ospf network point-to-multipoint non-broadcast
+exit
+router ospf
+ neighbor 192.168.100.13 poll-interval 30
+ neighbor 192.168.200.13 poll-interval 30
 exit
 write memory
 exit
@@ -386,7 +397,16 @@ exit
 
 ### Роутери (VRN625, Syhiv17)
 
-Якщо на роутерах є FRR/vtysh: для wgclt1/wgclt2 — **ip ospf network point-to-point** і **ip ospf neighbor** з IP Amper на відповідному /30 (Syhiv17: neighbor 192.168.100.1 на wgclt1, 192.168.200.1 на wgclt2; VRN625: neighbor 192.168.100.5 на wgclt1, 192.168.200.5 на wgclt2). На UniFi через UI — перевірити наявність опції «OSPF neighbor» для інтерфейсу.
+Як у вашому варіанті: **neighbor** лише під **router ospf**, на інтерфейсах — **ip ospf network point-to-multipoint non-broadcast** (або point-to-point, якщо на UniFi немає ptmp-nb). Приклад VRN625:
+
+```vtysh
+router ospf
+ neighbor 192.168.100.5 poll-interval 30
+ neighbor 192.168.200.5 poll-interval 30
+exit
+```
+
+Syhiv17: `neighbor 192.168.100.1`, `neighbor 192.168.200.1` (Amper на wg0). На UniFi через UI — якщо є тип мережі «point-to-multipoint non-broadcast» та список neighbor, задати їх; інакше залишити поточний варіант (neighbor під router ospf).
 
 ---
 

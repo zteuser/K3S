@@ -14,12 +14,12 @@ OSPF використовує **multicast** 224.0.0.5 (AllSPFRouters) і 224.0.0
 
 ## 2. Рішення: OSPF unicast (статичні сусіди) — без multicast у AllowedIPs
 
-Замість multicast можна використовувати **unicast**: FRR відправляє OSPF Hello та інші пакети **безпосередньо на IP сусіда** на лінку, а не на 224.0.0.5. Для цього в OSPF на кожному WG-інтерфейсі задають **статичного сусіда** — IP другого кінця підмережі /30. Цей IP **вже є** у AllowedIPs (підмережа /30), тому додаткових маршрутів не потрібно, конфлікту немає.
+Замість multicast можна використовувати **unicast**: FRR відправляє OSPF Hello **на IP сусіда**, а не на 224.0.0.5. Цей IP **вже є** у AllowedIPs (підмережа /30), тому додаткових маршрутів не потрібно.
 
-У FRR це робиться так:
+У [FRR OSPFv2](https://docs.frrouting.org/en/latest/ospfd.html) команда **neighbor** існує **лише під router ospf** (для NBMA та point-to-multipoint non-broadcast); **ip ospf neighbor** під інтерфейсом у FRR немає. Щоб FRR використовував unicast до цих сусідів:
 
-- Тип мережі для інтерфейсу: **point-to-point** (один сусід на лінку).
-- На кожному інтерфейсі wg0–wg3: **ip ospf neighbor &lt;IP_сусіда_на_цьому_/30&gt;**.
+- Тип мережі на WG-інтерфейсах: **point-to-multipoint non-broadcast** (тоді OSPF не шле на 224.0.0.5 і очікує явно заданих сусідів).
+- Під **router ospf**: **neighbor &lt;IP_сусіда_на_/30&gt;** (опційно **poll-interval 30**).
 
 Після цього OSPF використовує **unicast** до цього сусіда; маршрут до сусідського IP уже є (через AllowedIPs підмережі /30). **224.0.0.5/32 і 224.0.0.6/32 у WireGuard AllowedIPs не додаємо.**
 
@@ -78,39 +78,41 @@ OSPF використовує **multicast** 224.0.0.5 (AllSPFRouters) і 224.0.0
 
 **Нічого.** 224.0.0.5/32 і 224.0.0.6/32 у AllowedIPs **не додавати**. Поточних AllowedIPs (підмережі /30 та потрібні LAN/хости) достатньо: unicast до сусідського IP вже маршрутизується через відповідний wg-інтерфейс.
 
-Якщо на master-node (або work-node) у wg0/wg1 **вже** були додані 224.0.0.5/32, 224.0.0.6/32 для роутерів — їх можна **залишити** лише на **одному** з інтерфейсів (наприклад, тільки wg0), щоб не створювати конфлікт з wg1. Або прибрати з усіх і повністю перейти на unicast через **ip ospf neighbor** (рекомендовано для єдиної схеми).
+Якщо на master-node (або work-node) у wg0/wg1 **вже** були додані 224.0.0.5/32, 224.0.0.6/32 для роутерів — їх можна **залишити** лише на **одному** з інтерфейсів (наприклад, тільки wg0), щоб не створювати конфлікт з wg1. Або прибрати з усіх і повністю перейти на unicast через **point-to-multipoint non-broadcast** і **neighbor** під router ospf (рекомендовано).
 
 ---
 
 ## 5. Що змінити у FRR (обов’язково)
 
-На **кожному** пристрої з FRR (master-node, work-node, macmini7, beelinkeqr5, за потреби — роутери) для **кожного** WG-інтерфейсу в OSPF:
+У [FRR OSPFv2](https://docs.frrouting.org/en/latest/ospfd.html) команда **neighbor** існує **лише під router ospf**; **ip ospf neighbor** під інтерфейсом немає. На кожному пристрої з FRR:
 
-1. **ip ospf network point-to-point**
-2. **ip ospf neighbor &lt;IP_сусіда&gt;** — значення з таблиці вище (розділ 3).
+1. На WG-інтерфейсах: **ip ospf network point-to-multipoint non-broadcast** (щоб FRR не слало Hello на 224.0.0.5 і використовувало список neighbor).
+2. Під **router ospf**: **neighbor &lt;IP_сусіда&gt;** — значення з таблиці (розділ 3); опційно **poll-interval 30**.
 
 Приклад для **master-node** (vtysh):
 
 ```vtysh
 configure terminal
 interface wg0
- ip ospf network point-to-point
- ip ospf neighbor 192.168.100.2
+ ip ospf network point-to-multipoint non-broadcast
 interface wg1
- ip ospf network point-to-point
- ip ospf neighbor 192.168.100.6
+ ip ospf network point-to-multipoint non-broadcast
 interface wg2
- ip ospf network point-to-point
- ip ospf neighbor 192.168.100.10
+ ip ospf network point-to-multipoint non-broadcast
 interface wg3
- ip ospf network point-to-point
- ip ospf neighbor 192.168.100.14
+ ip ospf network point-to-multipoint non-broadcast
+exit
+router ospf
+ neighbor 192.168.100.2 poll-interval 30
+ neighbor 192.168.100.6 poll-interval 30
+ neighbor 192.168.100.10 poll-interval 30
+ neighbor 192.168.100.14 poll-interval 30
 exit
 write memory
 exit
 ```
 
-Для work-node, macmini7, beelinkeqr5 — аналогічно, з IP сусідів з розділу 3. Повні приклади по пристроях — у **FRR_OSPF_CONFIG_EXAMPLES.md** (розділ 5.1 і оновлені підрозділи 3.x).
+Для work-node, macmini7, beelinkeqr5 — аналогічно (тип мережі ptmp-nb на WG, neighbor під router ospf). Повні приклади — у **FRR_OSPF_CONFIG_EXAMPLES.md** (розділ 5.1).
 
 ---
 
@@ -125,9 +127,9 @@ exit
 | Питання | Відповідь |
 |---------|-----------|
 | Чи додавати 224.0.0.5/32, 224.0.0.6/32 у AllowedIPs на всіх wg*? | **Ні** — виникає конфлікт маршрутів на Ubuntu. |
-| Як тоді працюватиме OSPF по тунелях? | Через **unicast**: у FRR на кожному WG-інтерфейсі вказати **ip ospf neighbor &lt;IP_сусіда_на_/30&gt;** (таблиця в розділі 3). |
+| Як тоді працюватиме OSPF по тунелях? | Через **unicast**: у FRR тип мережі **point-to-multipoint non-broadcast** на WG-інтерфейсах і **neighbor &lt;IP&gt;** під **router ospf** (таблиця в розділі 3). У FRR **ip ospf neighbor** під інтерфейсом немає. |
 | Чи потрібно щось міняти в WireGuard? | Ні (або прибрати 224.0.0.5/6 з AllowedIPs, якщо вони були додані на кількох інтерфейсах). |
-| Що обов’язково змінити у FRR? | Для кожного WG-інтерфейсу: **ip ospf network point-to-point** і **ip ospf neighbor &lt;IP&gt;** (розділ 3 і 5). |
+| Що обов’язково змінити у FRR? | На WG-інтерфейсах: **ip ospf network point-to-multipoint non-broadcast**. Під **router ospf**: **neighbor &lt;IP&gt;** (розділ 3 і 5). У FRR **ip ospf neighbor** під інтерфейсом немає — тільки neighbor під router ospf. |
 | Що ще потрібно для повного mesh? | iptables FORWARD між wg0/wg1 та wg2/wg3 на Amper (WIREGUARD_IPTABLES_HELPER_ANALYSIS.md). |
 
 Після налаштування статичних сусідів OSPF (unicast) поточна конфігурація WireGuard **достатня** для коректної роботи FRR OSPF без додавання 224.0.0.5/32 і 224.0.0.6/32 у AllowedIPs на всіх інтерфейсах.
