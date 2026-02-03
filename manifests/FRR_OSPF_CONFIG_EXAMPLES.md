@@ -33,6 +33,8 @@ OSPF Area 0 (backbone), FRR на нодах кластера (master-node, work-
 
 **Мережі для OSPF Area 0:** 10.0.10.0/24, 192.168.1.0/24, 192.168.2.0/24, 192.168.100.0/24, 192.168.200.0/24. На кожному пристрої в OSPF оголошуються лише ті з них, які реально є на інтерфейсах (див. розділи по пристроях).
 
+**WireGuard і OSPF:** додавати **224.0.0.5/32, 224.0.0.6/32** у AllowedIPs на **всіх** wg* на одному хості **не можна** — виникає конфлікт маршрутів. Замість multicast використовуйте **unicast**: у FRR на кожному WG-інтерфейсі вкажіть **ip ospf neighbor &lt;IP_сусіда_на_/30&gt;** (див. розділ 5.1 і **WIREGUARD_OSPF_COMPATIBILITY_ANALYSIS.md**). На Amper також потрібні правила iptables FORWARD між wg0/wg1 та wg2/wg3 — див. **WIREGUARD_IPTABLES_HELPER_ANALYSIS.md**.
+
 ---
 
 ## 2. Встановлення FRR (Ubuntu / ноди кластера)
@@ -299,6 +301,92 @@ sudo vtysh -c "show ip route ospf"
 ```
 
 На UCG — через UniFi: статус OSPF, списки сусідів та маршрутів (якщо інтерфейс це показує).
+
+---
+
+## 5.1 Point-to-point і статичні сусіди OSPF (unicast) для WG-інтерфейсів
+
+Тунелі /30 є point-to-point. Щоб OSPF працював по WireGuard **без** додавання 224.0.0.5/32 у AllowedIPs на всіх інтерфейсах (що спричиняє конфлікт маршрутів), на кожному WG-інтерфейсі задають **ip ospf network point-to-point** і **ip ospf neighbor &lt;IP_сусіда&gt;** — IP другого кінця підмережі /30. Тоді OSPF використовує **unicast** до сусіда; маршрут до цього IP уже є (AllowedIPs /30).
+
+### master-node (192.168.100.x)
+
+```vtysh
+configure terminal
+interface wg0
+ ip ospf network point-to-point
+ ip ospf neighbor 192.168.100.2
+interface wg1
+ ip ospf network point-to-point
+ ip ospf neighbor 192.168.100.6
+interface wg2
+ ip ospf network point-to-point
+ ip ospf neighbor 192.168.100.10
+interface wg3
+ ip ospf network point-to-point
+ ip ospf neighbor 192.168.100.14
+exit
+write memory
+exit
+```
+
+(192.168.100.2 Syhiv17, .6 VRN625, .10 macmini7, .14 beelinkeqr5.)
+
+### work-node (192.168.200.x)
+
+```vtysh
+configure terminal
+interface wg0
+ ip ospf network point-to-point
+ ip ospf neighbor 192.168.200.2
+interface wg1
+ ip ospf network point-to-point
+ ip ospf neighbor 192.168.200.6
+interface wg2
+ ip ospf network point-to-point
+ ip ospf neighbor 192.168.200.10
+interface wg3
+ ip ospf network point-to-point
+ ip ospf neighbor 192.168.200.14
+exit
+write memory
+exit
+```
+
+(192.168.200.2 Syhiv17, .6 VRN625, .10 macmini7, .14 beelinkeqr5.)
+
+### macmini7 (wg0 → master, wg1 → worker)
+
+```vtysh
+configure terminal
+interface wg0
+ ip ospf network point-to-point
+ ip ospf neighbor 192.168.100.9
+interface wg1
+ ip ospf network point-to-point
+ ip ospf neighbor 192.168.200.9
+exit
+write memory
+exit
+```
+
+### beelinkeqr5 (wg0 → master, wg1 → worker)
+
+```vtysh
+configure terminal
+interface wg0
+ ip ospf network point-to-point
+ ip ospf neighbor 192.168.100.13
+interface wg1
+ ip ospf network point-to-point
+ ip ospf neighbor 192.168.200.13
+exit
+write memory
+exit
+```
+
+### Роутери (VRN625, Syhiv17)
+
+Якщо на роутерах є FRR/vtysh: для wgclt1/wgclt2 — **ip ospf network point-to-point** і **ip ospf neighbor** з IP Amper на відповідному /30 (Syhiv17: neighbor 192.168.100.1 на wgclt1, 192.168.200.1 на wgclt2; VRN625: neighbor 192.168.100.5 на wgclt1, 192.168.200.5 на wgclt2). На UniFi через UI — перевірити наявність опції «OSPF neighbor» для інтерфейсу.
 
 ---
 
