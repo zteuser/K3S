@@ -6,16 +6,16 @@ OSPF Area 0 (backbone), FRR на нодах кластера (master-node, work-
 
 ## 1. Топологія (з реальних конфігурацій WG)
 
-**Ключове:** на **master-node** усі тунелі в діапазоні **192.168.100.x/30** (wg0–wg3). На **work-node** усі тунелі в **192.168.200.x/30** (wg0–wg3). Роутери: Syhiv17 (45.12.26.162) — master wg0, worker wg0; VRN625 (178.136.42.156) — master wg1, worker wg1. Ноди macmini7 (192.168.**1**.19) та beelinkeqr5 (192.168.**2**.19) підключені до Amper через wg2/wg3 (прямі тунелі або через NAT роутерів).
+**Ключове:** на **master-node** усі тунелі в діапазоні **192.168.100.x/30** (wg0–wg3). На **work-node** усі тунелі в **192.168.200.x/30** (wg0–wg3). Роутери: Syhiv17 (45.12.26.162) — master wg0, worker wg0; VRN625 (178.136.42.156) — master wg1, worker wg1. Ноди macmini7 (192.168.**2**.19, VRN625) та beelinkeqr5 (192.168.**1**.19, Syhiv17) підключені до Amper через wg2/wg3 (прямі тунелі або через NAT роутерів).
 
 | Пристрій | Роль | LAN / OCI | 192.168.100.x/30 | 192.168.200.x/30 |
 |----------|------|-----------|-------------------|-------------------|
-| **master-node** | k3s master | 10.0.10.10 (141.144.254.42) | wg0 .1/30 Syhiv17, wg1 .5/30 VRN625, wg2 .9/30 beelinkeqr5, wg3 .13/30 macmini7 | — |
-| **work-node** | k3s worker | 10.0.10.20 (141.147.58.119) | — | wg0 .1/30 Syhiv17, wg1 .5/30 VRN625, wg2 .9/30 beelinkeqr5, wg3 .13/30 macmini7 |
+| **master-node** | k3s master | 10.0.10.10 (141.144.254.42) | wg0 .1/30 Syhiv17, wg1 .5/30 VRN625, wg2 .9/30 macmini7, wg3 .13/30 beelinkeqr5 | — |
+| **work-node** | k3s worker | 10.0.10.20 (141.147.58.119) | — | wg0 .1/30 Syhiv17, wg1 .5/30 VRN625, wg2 .9/30 macmini7, wg3 .13/30 beelinkeqr5 |
 | **VRN625** (Vernadskogo25) | роутер | 192.168.2.1/24 | wgclt1 → master:51821 | wgclt2 → worker:51823 |
 | **Syhiv17** (Syhiv17-25) | роутер | 192.168.1.1/24 | wgclt1 → master:51820 | wgclt2 → worker:51822 |
-| **macmini7** | k3s master | **192.168.1.19**/24 | wg0 .10/30 → master:51824 (wg2) | wg1 .10/30 → worker:51825 (wg2) |
-| **beelinkeqr5** | k3s master | **192.168.2.19**/24 | wg0 .14/30 → master:51826 (wg3) | wg1 .14/30 → worker:51827 (wg3) |
+| **macmini7** | k3s master | **192.168.2.19**/24 (VRN625) | wg0 .10/30 → master:51824 (wg2) | wg1 .10/30 → worker:51825 (wg2) |
+| **beelinkeqr5** | k3s master | **192.168.1.19**/24 (Syhiv17) | wg0 .14/30 → master:51826 (wg3) | wg1 .14/30 → worker:51827 (wg3) |
 
 **Порти master-node:** wg0 51820, wg1 51821, wg2 51824, wg3 51826.  
 **Порти work-node:** wg0 51822, wg1 51823, wg2 51825, wg3 51827.
@@ -138,7 +138,7 @@ exit
 
 ---
 
-### 3.3 macmini7 (k3s master, LAN 192.168.1.19)
+### 3.3 macmini7 (k3s master, LAN 192.168.2.19, VRN625)
 
 **Router ID:** 0.0.0.5. OSPF на LAN-інтерфейсі та на wg0, wg1 (тунелі до Amper: master:51824, worker:51825).
 
@@ -148,7 +148,7 @@ hostname macmini7
 ip forwarding
 router ospf
  router-id 0.0.0.5
- network 192.168.1.0/24 area 0.0.0.0
+ network 192.168.2.0/24 area 0.0.0.0
  network 192.168.100.0/24 area 0.0.0.0
  network 192.168.200.0/24 area 0.0.0.0
  passive-interface default
@@ -165,7 +165,7 @@ exit
 
 ---
 
-### 3.4 beelinkeqr5 (k3s master, LAN 192.168.2.19)
+### 3.4 beelinkeqr5 (k3s master, LAN 192.168.1.19, Syhiv17)
 
 **Router ID:** 0.0.0.6. Тунелі до Amper: master:51826 (wg0), worker:51827 (wg1).
 
@@ -175,7 +175,7 @@ hostname beelinkeqr5
 ip forwarding
 router ospf
  router-id 0.0.0.6
- network 192.168.2.0/24 area 0.0.0.0
+ network 192.168.1.0/24 area 0.0.0.0
  network 192.168.100.0/24 area 0.0.0.0
  network 192.168.200.0/24 area 0.0.0.0
  passive-interface default
@@ -310,7 +310,7 @@ sudo vtysh -c "show ip route ospf"
 | Amper worker | 0.0.0.2   | 10.0.10.0/24, 192.168.200.0/24 |
 | VRN625       | 0.0.0.3   | 192.168.2.0/24, 192.168.100.0/24, 192.168.200.0/24 |
 | Syhiv17      | 0.0.0.4   | 192.168.1.0/24, 192.168.100.0/24, 192.168.200.0/24 |
-| macmini7     | 0.0.0.5   | 192.168.1.0/24, 192.168.100.0/24, 192.168.200.0/24 |
-| beelinkeqr5  | 0.0.0.6   | 192.168.2.0/24, 192.168.100.0/24, 192.168.200.0/24 |
+| macmini7     | 0.0.0.5   | 192.168.2.0/24, 192.168.100.0/24, 192.168.200.0/24 |
+| beelinkeqr5  | 0.0.0.6   | 192.168.1.0/24, 192.168.100.0/24, 192.168.200.0/24 |
 
 Після встановлення сусідства (Full) між усіма парами на спільних мережах у кожного роутера з’явиться повна картина маршрутів до 10.0.10.0/24, 192.168.1.0/24, 192.168.2.0/24 та тунельних підмереж, що відповідає mesh WireGuard + OSPF з діаграми Syhiv VPN-3 OSPF.
