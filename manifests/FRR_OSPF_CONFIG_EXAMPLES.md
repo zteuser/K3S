@@ -204,7 +204,7 @@ exit
 
 ### 3.5 VRN625 (роутер, LAN 192.168.2.1, wgclt1/wgclt2)
 
-**Router ID:** 0.0.0.3. Endpoint master:51821 (wgclt1), worker:51823 (wgclt2). Щоб оголошувати в OSPF **лише хости /32** (192.168.2.1/32, 192.168.2.198/32, 192.168.2.31/32) замість 192.168.2.0/24 — повний приклад (prefix-list, route-map, статичні маршрути для .198 і .31) у **OSPF_ROUTERS_HOST_ROUTES_32_ONLY.md**. Нижче — базова конфігурація FRR; при варіанті «лише /32» прибрати `network 192.168.2.0/24` і додати redistribute connected/static з route-map.
+**Router ID:** 0.0.0.3. Endpoint master:51821 (wgclt1), worker:51823 (wgclt2). На UCG Ultra OSPF налаштовується через **UniFi Network Application** (Settings → Routing & Firewall → OSPF). Нижче — еквівалент для FRR (якщо на роутері доступний vtysh або імпорт конфігу).
 
 Потрібно в OSPF Area 0:
 
@@ -230,11 +230,9 @@ hostname vrn625
 ip forwarding
 router ospf
  router-id 0.0.0.3
- no network 192.168.2.0/24 area 0.0.0.0
+ network 192.168.2.0/24 area 0.0.0.0
  network 192.168.100.0/24 area 0.0.0.0
  network 192.168.200.0/24 area 0.0.0.0
- redistribute connected route-map VRN-HOSTS-ONLY
- redistribute static route-map VRN-HOSTS-ONLY
  passive-interface default
  no passive-interface <lan_interface>
  no passive-interface wgclt1
@@ -245,15 +243,36 @@ write memory
 exit
 ```
 
-Ім’я Для варіанту «лише /32» (без 192.168.2.0/24): prefix-list, route-map, статичні маршрути — **OSPF_ROUTERS_HOST_ROUTES_32_ONLY.md**. LAN-інтерфейс підставити згідно з топологією (наприклад br0).
+Ім’я LAN-інтерфейсу на UCG підставити згідно з вашою топологією (наприклад br0 або інтерфейс, що має 192.168.2.1).
 
 ---
 
 ### 3.6 Syhiv17 (роутер, LAN 192.168.1.1, wgclt1/wgclt2)
 
-**Router ID:** 0.0.0.4. Endpoint master:51820 (wgclt1), worker:51822 (wgclt2). В OSPF оголошувати **лише** 192.168.1.1/32, **без** 192.168.1.0/24 — див. **OSPF_ROUTERS_HOST_ROUTES_32_ONLY.md**.
+**Router ID:** 0.0.0.4. Endpoint master:51820 (wgclt1), worker:51822 (wgclt2). Аналогічно VRN625 — через UniFi UI або FRR.
 
-**Коротко для FRR (vtysh):** прибрати `network 192.168.1.0/24 area 0`; додати prefix-list (дозволити 192.168.1.1/32), route-map і **redistribute connected route-map SYHIV-HOSTS-ONLY**. WG-мережі (192.168.100.0/24, 192.168.200.0/24) лишаються в OSPF.
+**UniFi UI:** Router ID **0.0.0.4**, Area **0.0.0.0**, інтерфейси: LAN 192.168.1.0/24 та WireGuard (192.168.100.0/24, 192.168.200.0/24), Redistribute Connected.
+
+**FRR (vtysh):**
+
+```vtysh
+configure terminal
+hostname syhiv17
+ip forwarding
+router ospf
+ router-id 0.0.0.4
+ network 192.168.1.0/24 area 0.0.0.0
+ network 192.168.100.0/24 area 0.0.0.0
+ network 192.168.200.0/24 area 0.0.0.0
+ passive-interface default
+ no passive-interface <lan_interface>
+ no passive-interface wgclt1
+ no passive-interface wgclt2
+exit
+exit
+write memory
+exit
+```
 
 ---
 
