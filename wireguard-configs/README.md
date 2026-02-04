@@ -5,7 +5,7 @@
 ## Файли (після збору)
 
 | Файл | Пристрій |
-|------|----------|
+| ------ | ---------- |
 | `amper-master-wg-YYYYMMDD.txt` | Amper master (10.0.10.10) |
 | `amper-worker-wg-YYYYMMDD.txt` | Amper worker (10.0.10.20) |
 | `vrn625-wg-YYYYMMDD.txt` (або скріншоти) | VRN625 (192.168.2.1) |

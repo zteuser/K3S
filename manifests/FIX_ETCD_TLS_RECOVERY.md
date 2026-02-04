@@ -1,6 +1,7 @@
 # Відновлення etcd: "no leader" та "rejected connection" (TLS SAN)
 
 **Симптоми:**
+
 - **beelinkeqr5:** `watch chan error: etcdserver: no leader`
 - **macmini7 / master-node:** k3s не стартує або etcd не формує кворум; в логах — `rejected connection on peer endpoint`, `tls: "192.168.100.x" does not match any of DNSNames [...]`
 
@@ -14,8 +15,8 @@
 
 ## Яку адресу додати на яку ноду (з ваших логів)
 
-| Нода        | Додати tls-san (тільки ці) | Чому |
-|-------------|----------------------------|------|
+| Нода | Додати tls-san (тільки ці) | Чому |
+| ------------- | ---------------------------- | ------ |
 | **beelinkeqr5** | **лише** `192.168.100.2` | Коли beelinkeqr5 підключається до macmini7/master-node, її трафік має source IP 192.168.100.2 |
 | **master-node** | **лише** `192.168.100.5` | Коли master-node підключається до інших, трафік має source IP 192.168.100.5 |
 | **macmini7**    | `192.168.100.6` **і** `192.168.100.1` | До master-node — source 192.168.100.6; до beelinkeqr5 — source 192.168.100.1 (логи на beelinkeqr5: "rejected … remote-addr: 192.168.100.1") |
@@ -96,19 +97,23 @@ K3s при старті генерує etcd peer-сертифікати з ур�
 Порядок перезапуску (щоб дві ноди могли швидше сформувати кворум):
 
 1. **master-node**
+
    ```bash
    sudo systemctl restart k3s
    sudo systemctl status k3s
    ```
+
    Дочекатися, поки k3s стане active (навіть якщо etcd ще скаржиться в логах).
 
 2. **macmini7**
+
    ```bash
    sudo systemctl restart k3s
    sudo systemctl status k3s
    ```
 
 3. **beelinkeqr5**
+
    ```bash
    sudo systemctl restart k3s
    sudo systemctl status k3s
@@ -129,18 +134,21 @@ kubectl get cs  # компоненти (scheduler, controller-manager, etcd) м�
 На **кожній** ноді по черзі (k3s має бути запущений, навіть якщо etcd "no leader"):
 
 **На beelinkeqr5:**
+
 ```bash
 sudo k3s certificate rotate --service etcd
 sudo systemctl restart k3s
 ```
 
 **На master-node:**
+
 ```bash
 sudo k3s certificate rotate --service etcd
 sudo systemctl restart k3s
 ```
 
 **На macmini7:**
+
 ```bash
 sudo k3s certificate rotate --service etcd
 sudo systemctl restart k3s
@@ -153,17 +161,21 @@ sudo systemctl restart k3s
 ## Крок 3. Перевірка
 
 - На будь-якій control-plane ноді:
+
   ```bash
   sudo k3s etcdctl member list
   ```
+
   Усі три члени мають бути в списку; якщо є `k3s etcdctl` — можна перевірити стан кворуму.
 
 - Логи без "rejected connection":
+
   ```bash
   sudo journalctl -u k3s -f --no-pager | head -100
   ```
 
 - З beelinkeqr5 (або з іншої ноди з kubectl):
+
   ```bash
   kubectl get nodes
   kubectl get pods -A
@@ -200,10 +212,11 @@ sudo env ETCDCTL_API=3 \
 ```
 
 У виводі буде щось на кшталт:
+
 - `... beelinkeqr5-... https://192.168.1.19:2380` або `https://192.168.2.x:2380`
 - `... macmini7-... https://192.168.2.19:2380`
 
-Оновити **beelinkeqr5** так, щоб його peer URL була адреса, за якою до нього підключаються (у вашому випадку з beelinkeqr5 прийходять з’єднання з source 192.168.100.1/192.168.100.6, тобто підключаються **до** beelinkeqr5; для beelinkeqr5 потрібно вказати URL, за яким інші ноди його досягають — зазвичай **192.168.100.2** або **192.168.1.19**). Якщо інші ноди підключаються до beelinkeqr5 по 192.168.100.2 — встановіть peer URL **https://192.168.100.2:2380**:
+Оновити **beelinkeqr5** так, щоб його peer URL була адреса, за якою до нього підключаються (у вашому випадку з beelinkeqr5 прийходять з’єднання з source 192.168.100.1/192.168.100.6, тобто підключаються **до** beelinkeqr5; для beelinkeqr5 потрібно вказати URL, за яким інші ноди його досягають — зазвичай **192.168.100.2** або **192.168.1.19**). Якщо інші ноди підключаються до beelinkeqr5 по 192.168.100.2 — встановіть peer URL **[https://192.168.100.2:2380]**:
 
 ```bash
 # 2. Підставити MEMBER_ID beelinkeqr5 (перше поле з member list)
@@ -278,7 +291,7 @@ sudo systemctl status k3s
 
 ## Якщо після зміни peer URL macmini7 на 192.168.100.1 etcd розсипався
 
-Якщо ви змінили macmini7 peer URL на **https://192.168.100.1:2380**, а на 192.168.100.1 ніхто не слухає порт 2380 (nc — Connection refused), то master-node і macmini7 не зможуть підключатися до macmini7 за member list → кворум втрачається, kubectl — ServiceUnavailable / Timeout.
+Якщо ви змінили macmini7 peer URL на **[https://192.168.100.1:2380]**, а на 192.168.100.1 ніхто не слухає порт 2380 (nc — Connection refused), то master-node і macmini7 не зможуть підключатися до macmini7 за member list → кворум втрачається, kubectl — ServiceUnavailable / Timeout.
 
 **Відкотити peer URL macmini7 назад на 192.168.2.19** (адреса, де etcd на macmini7 реально слухає). Виконати **на macmini7** (etcd може ще відповідати локально):
 
@@ -321,7 +334,7 @@ sudo systemctl restart k3s
 ## Підсумок
 
 | Крок | Де | Дія |
-|------|-----|-----|
+| ------ | ----- | ----- |
 | 1 | beelinkeqr5 | У `/etc/rancher/k3s/config.yaml` **лише** `tls-san: 192.168.100.2` (видалити .1, .5, .6, якщо додавали) |
 | 1 | master-node | У config лише `tls-san: 192.168.100.5` |
 | 1 | macmini7 | У config `tls-san: 192.168.100.6` **і** `tls-san: 192.168.100.1` |
