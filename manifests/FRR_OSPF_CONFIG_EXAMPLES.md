@@ -31,7 +31,7 @@ OSPF Area 0 (backbone), FRR на нодах кластера (master-node, work-
 - **192.168.200.8/30** — work wg2 .9 ↔ macmini7 wg1 .10 (worker:51825)
 - **192.168.200.12/30** — work wg3 .13 ↔ beelinkeqr5 wg1 .14 (worker:51827)  
 
-**Мережі для OSPF Area 0:** 10.0.10.0/24, 192.168.1.0/24, 192.168.2.0/24, 192.168.100.0/24, 192.168.200.0/24. На кожному пристрої в OSPF оголошуються лише ті з них, які реально є на інтерфейсах (див. розділи по пристроях).
+**Мережі для OSPF Area 0:** 10.0.10.0/24, 192.168.100.0/24, 192.168.200.0/24 та **хости /32** (192.168.1.1, 192.168.1.19, 192.168.2.1, 192.168.2.19, 192.168.2.31, 192.168.2.198 тощо). Мереж 192.168.1.0/24 та 192.168.2.0/24 **не** оголошують — лише /32 (див. **OSPF_ROUTERS_HOST_ROUTES_32.md** та розділи 3.3, 3.4 нижче).
 
 **WireGuard і OSPF:** додавати **224.0.0.5/32, 224.0.0.6/32** у AllowedIPs на **всіх** wg* на одному хості **не можна** — виникає конфлікт маршрутів. Замість multicast використовуйте **unicast**: у FRR задайте тип мережі **point-to-multipoint non-broadcast** на WG-інтерфейсах і сусідів **під router ospf** командою **neighbor A.B.C.D** (див. розділ 5.1 і [FRR OSPFv2](https://docs.frrouting.org/en/latest/ospfd.html)). На Amper також потрібні правила iptables FORWARD між wg0/wg1 та wg2/wg3 — див. **WIREGUARD_IPTABLES_HELPER_ANALYSIS.md**.
 
@@ -43,7 +43,7 @@ OSPF Area 0 (backbone), FRR на нодах кластера (master-node, work-
 - **AllowedIPs** у кожному `[Peer]` **залишаються обов'язковими**: вони задають, **який трафік** модуль WireGuard шифрує і відправляє якому peer. Це не маршрути, а критерій «ці префікси йдуть у цей тунель».
 - Послідовність: ядро обирає маршрут з таблиці (наприклад, 10.0.10.10/32 via 192.168.100.9 dev wg0) → пакет потрапляє на wg0 → WireGuard перевіряє AllowedIPs для peer з 192.168.100.9 → шифрує і відправляє. Якщо в AllowedIPs цього peer немає 10.0.10.10/32, трафік не буде зашифрований для цього peer.
 
-**Висновок:** на хостах Ubuntu з FRR доцільно вказати **Table = off** у всіх WG-інтерфейсах і в **AllowedIPs** перерахувати **усі підмережі, які доступні в OSPF** (ті самі, що оголошуються в Area 0: 10.0.10.0/24, 192.168.100.0/24, 192.168.200.0/24, 192.168.1.0/24, 192.168.2.0/24 — або конкретні /30 та /32 для кожного peer). Приклади конфігів з **Table = off** і списком AllowedIPs під OSPF — у **WIREGUARD_CLIENT_CONFIG_MACMINI_BEELINK.md** (розділ про Table = off).
+**Висновок:** на хостах Ubuntu з FRR доцільно вказати **Table = off** у всіх WG-інтерфейсах і в **AllowedIPs** перерахувати **усі підмережі, які доступні в OSPF** (ті самі, що оголошуються в Area 0: 10.0.10.0/24, 192.168.100.0/24, 192.168.200.0/24 та хости /32 — 192.168.1.19/32, 192.168.2.19/32 тощо; мереж 192.168.1.0/24 та 192.168.2.0/24 не оголошують, див. OSPF_ROUTERS_HOST_ROUTES_32.md). Приклади конфігів з **Table = off** і списком AllowedIPs під OSPF — у **WIREGUARD_CLIENT_CONFIG_MACMINI_BEELINK.md** (розділ про Table = off).
 
 ---
 
@@ -152,7 +152,7 @@ exit
 
 ### 3.3 macmini7 (k3s master, LAN 192.168.2.19, VRN625)
 
-**Router ID:** 0.0.0.5. OSPF на LAN-інтерфейсі та на wg0, wg1 (тунелі до Amper: master:51824, worker:51825).
+**Router ID:** 0.0.0.5. OSPF на wg0, wg1 (тунелі до Amper: master:51824, worker:51825) та **лише хост 192.168.2.19/32** — мережу 192.168.2.0/24 **не** оголошувати (див. **OSPF_ROUTERS_HOST_ROUTES_32.md** — той самий підхід для хостів).
 
 ```vtysh
 configure terminal
@@ -160,7 +160,7 @@ hostname macmini7
 ip forwarding
 router ospf
  router-id 0.0.0.5
- network 192.168.2.0/24 area 0.0.0.0
+ network 192.168.2.19/32 area 0.0.0.0
  network 192.168.100.0/24 area 0.0.0.0
  network 192.168.200.0/24 area 0.0.0.0
  passive-interface default
@@ -173,13 +173,13 @@ write memory
 exit
 ```
 
-Ім’я LAN-інтерфейсу замініть на фактичне (наприклад `en0` на macOS — на Ubuntu зазвичай `eth0` або подібне).
+Ім’я LAN-інтерфейсу замініть на фактичне (наприклад `en0` на macOS — на Ubuntu зазвичай `eth0` або подібне). Щоб у OSPF потрапив лише 192.168.2.19/32, можна замість `network 192.168.2.19/32` використати loopback з цією адресою або redistribute connected з route-map (лише /32) — як на роутерах у **OSPF_ROUTERS_HOST_ROUTES_32.md**.
 
 ---
 
 ### 3.4 beelinkeqr5 (k3s master, LAN 192.168.1.19, Syhiv17)
 
-**Router ID:** 0.0.0.6. Тунелі до Amper: master:51826 (wg0), worker:51827 (wg1).
+**Router ID:** 0.0.0.6. Тунелі до Amper: master:51826 (wg0), worker:51827 (wg1). В OSPF оголошувати **лише хост 192.168.1.19/32** — мережу 192.168.1.0/24 **не** оголошувати.
 
 ```vtysh
 configure terminal
@@ -187,7 +187,7 @@ hostname beelinkeqr5
 ip forwarding
 router ospf
  router-id 0.0.0.6
- network 192.168.1.0/24 area 0.0.0.0
+ network 192.168.1.19/32 area 0.0.0.0
  network 192.168.100.0/24 area 0.0.0.0
  network 192.168.200.0/24 area 0.0.0.0
  passive-interface default
@@ -200,50 +200,50 @@ write memory
 exit
 ```
 
+Якщо через `network` не вдається оголосити лише /32 (інтерфейс у підмережі /24), використати loopback з 192.168.1.19/32 та `network 192.168.1.19/32 area 0` або redistribute connected з route-map (лише 192.168.1.19/32) — аналогічно **OSPF_ROUTERS_HOST_ROUTES_32.md**.
+
 ---
 
 ### 3.5 VRN625 (роутер, LAN 192.168.2.1, wgclt1/wgclt2)
 
 **Router ID:** 0.0.0.3. Endpoint master:51821 (wgclt1), worker:51823 (wgclt2). На UCG Ultra OSPF налаштовується через **UniFi Network Application** (Settings → Routing & Firewall → OSPF). Нижче — еквівалент для FRR (якщо на роутері доступний vtysh або імпорт конфігу).
 
+**Важливо:** в OSPF **не** оголошувати мережу 192.168.2.0/24; оголошувати лише хости /32: **192.168.2.1/32**, **192.168.2.31/32**, **192.168.2.198/32**. Повна схема — у **OSPF_ROUTERS_HOST_ROUTES_32.md**.
+
 Потрібно в OSPF Area 0:
 
-- Інтерфейс LAN (192.168.2.0/24)
-- Інтерфейси WireGuard (wgclt1, wgclt2) — тунелі до master/worker
+- **Не** включати LAN 192.168.2.0/24; лише /32 (див. OSPF_ROUTERS_HOST_ROUTES_32.md).
+- Інтерфейси WireGuard (wgclt1, wgclt2) — 192.168.100.0/24, 192.168.200.0/24
 
 **Через UniFi UI (рекомендовано для UCG):**
 
 1. Settings → OSPF (або Routing → OSPF).
 2. Увімкнути OSPF, **Router ID** встановити унікальний, наприклад **0.0.0.3**.
 3. Додати **Area** з Area ID **0.0.0.0** (backbone).
-4. До цієї Area додати **interfaces**:
-   - мережа LAN (192.168.2.0/24),
-   - мережі WireGuard (192.168.100.0/24 та 192.168.200.0/24 або конкретні підмережі, якщо UI дозволяє вибір інтерфейсу).
-5. Увімкнути **Redistribute Connected Routes**, щоб локальні підмережі оголошувались в OSPF.
-6. Hello/Dead інтервали за замовчуванням (10/40), без passive на інтерфейсах, де очікуються сусіди OSPF.
+4. До Area додати лише **/32** (192.168.2.1, 192.168.2.31, 192.168.2.198), якщо UI дозволяє; інакше див. OSPF_ROUTERS_HOST_ROUTES_32.md (ручна правка FRR).
+5. WireGuard-мережі 192.168.100.0/24, 192.168.200.0/24 — як раніше.
 
-**Еквівалент у FRR (vtysh), якщо на UCG є доступ до FRR:**
+**FRR (vtysh) — оголошення лише /32:**
 
 ```vtysh
-configure terminal
-hostname vrn625
-ip forwarding
+ip prefix-list ROUTERS-HOSTS seq 5 permit 192.168.2.1/32
+ip prefix-list ROUTERS-HOSTS seq 10 permit 192.168.2.31/32
+ip prefix-list ROUTERS-HOSTS seq 15 permit 192.168.2.198/32
+route-map REDIST-ONLY-32 permit 10
+ match ip address prefix-list ROUTERS-HOSTS
+!
 router ospf
  router-id 0.0.0.3
- network 192.168.2.0/24 area 0.0.0.0
  network 192.168.100.0/24 area 0.0.0.0
  network 192.168.200.0/24 area 0.0.0.0
+ redistribute static route-map REDIST-ONLY-32
+ redistribute connected route-map REDIST-ONLY-32
  passive-interface default
- no passive-interface <lan_interface>
  no passive-interface wgclt1
  no passive-interface wgclt2
-exit
-exit
-write memory
-exit
 ```
 
-Ім’я LAN-інтерфейсу на UCG підставити згідно з вашою топологією (наприклад br0 або інтерфейс, що має 192.168.2.1).
+Перед цим: статичні маршрути для 192.168.2.31/32 та 192.168.2.198/32 (`ip route 192.168.2.31/32 dev br0` тощо). Детально — **OSPF_ROUTERS_HOST_ROUTES_32.md**.
 
 ---
 
@@ -251,27 +251,24 @@ exit
 
 **Router ID:** 0.0.0.4. Endpoint master:51820 (wgclt1), worker:51822 (wgclt2). Аналогічно VRN625 — через UniFi UI або FRR.
 
-**UniFi UI:** Router ID **0.0.0.4**, Area **0.0.0.0**, інтерфейси: LAN 192.168.1.0/24 та WireGuard (192.168.100.0/24, 192.168.200.0/24), Redistribute Connected.
+**Важливо:** в OSPF **не** оголошувати мережу 192.168.1.0/24; оголошувати лише хост **192.168.1.1/32**. Детально — **OSPF_ROUTERS_HOST_ROUTES_32.md**.
 
-**FRR (vtysh):**
+**UniFi UI:** якщо є опція — вказати лише 192.168.1.1/32 замість 192.168.1.0/24; інакше див. документ вище.
+
+**FRR (vtysh) — оголошення лише 192.168.1.1/32:**
+
+Прибрати `network 192.168.1.0/24`, додати `network 192.168.1.1/32` (адресу 192.168.1.1/32 має мати інтерфейс, наприклад loopback):
 
 ```vtysh
-configure terminal
-hostname syhiv17
-ip forwarding
 router ospf
  router-id 0.0.0.4
- network 192.168.1.0/24 area 0.0.0.0
+ no network 192.168.1.0/24 area 0.0.0.0
+ network 192.168.1.1/32 area 0.0.0.0
  network 192.168.100.0/24 area 0.0.0.0
  network 192.168.200.0/24 area 0.0.0.0
  passive-interface default
- no passive-interface <lan_interface>
  no passive-interface wgclt1
  no passive-interface wgclt2
-exit
-exit
-write memory
-exit
 ```
 
 ---
@@ -428,7 +425,9 @@ Syhiv17: `neighbor 192.168.100.1`, `neighbor 192.168.200.1` (Amper на wg0). Н
 | Amper worker | 0.0.0.2   | 10.0.10.0/24, 192.168.200.0/24 |
 | VRN625       | 0.0.0.3   | 192.168.2.0/24, 192.168.100.0/24, 192.168.200.0/24 |
 | Syhiv17      | 0.0.0.4   | 192.168.1.0/24, 192.168.100.0/24, 192.168.200.0/24 |
-| macmini7     | 0.0.0.5   | 192.168.2.0/24, 192.168.100.0/24, 192.168.200.0/24 |
-| beelinkeqr5  | 0.0.0.6   | 192.168.1.0/24, 192.168.100.0/24, 192.168.200.0/24 |
+| macmini7     | 0.0.0.5   | 192.168.2.19/32, 192.168.100.0/24, 192.168.200.0/24 |
+| beelinkeqr5  | 0.0.0.6   | 192.168.1.19/32, 192.168.100.0/24, 192.168.200.0/24 |
 
-Після встановлення сусідства (Full) між усіма парами на спільних мережах у кожного роутера з’явиться повна картина маршрутів до 10.0.10.0/24, 192.168.1.0/24, 192.168.2.0/24 та тунельних підмереж, що відповідає mesh WireGuard + OSPF з діаграми Syhiv VPN-3 OSPF.
+Мереж 192.168.1.0/24 та 192.168.2.0/24 хости macmini7 та beelinkeqr5 **не** оголошують — лише свої /32. Роутери VRN625 та Syhiv17 теж оголошують лише /32 (див. **OSPF_ROUTERS_HOST_ROUTES_32.md**).
+
+Після встановлення сусідства (Full) між усіма парами на спільних мережах у кожного роутера з’явиться повна картина маршрутів до 10.0.10.0/24, хостів /32 (192.168.1.1, 192.168.1.19, 192.168.2.1, 192.168.2.19, 192.168.2.31, 192.168.2.198 тощо) та тунельних підмереж, що відповідає mesh WireGuard + OSPF з діаграми Syhiv VPN-3 OSPF.
