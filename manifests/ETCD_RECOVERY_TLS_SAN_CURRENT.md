@@ -64,7 +64,17 @@ cat /etc/rancher/k3s/config.yaml
 
 ## Крок 2. Перегенерація etcd-сертифікатів і перезапуск
 
-Нові SAN потраплять в etcd-сертифікати після **rotate** або (залежно від версії k3s) після перезапуску з оновленим config. Рекомендовано: перезапуск → rotate etcd.
+**Важливо:** SAN для сертифікатів k3s бере з **поточного** `/etc/rancher/k3s/config.yaml`. Якщо спочатку зробити `rotate`, а потім додати tls-san — нові сертифікати все одно будуть без цих IP. Порядок має бути: **1) додати tls-san у config, 2) restart k3s, 3) rotate etcd, 4) restart k3s.**
+
+**Формат tls-san (обов'язково список):** у YAML кілька рядків `tls-san: 192.168.x.x` означають один ключ з останнім значенням — у сертифікат потрапляє лише один IP. Потрібно задати **tls-san як список** (YAML array), наприклад:
+```yaml
+tls-san:
+  - 192.168.100.1
+  - 192.168.100.5
+```
+Після зміни config: restart k3s → rotate etcd → restart k3s. Перевірка: `openssl x509 -in /var/lib/rancher/k3s/server/tls/etcd/peer-server-client.crt -noout -text | grep -A1 "Subject Alternative Name"` — мають з’явитися всі IP зі списку.
+
+Нові SAN потраплять в etcd-сертифікати після **rotate**, який використовує config, завантажений при останньому старті k3s.
 
 ### 2.1 master-node
 
@@ -128,4 +138,7 @@ sudo k3s etcdctl member list
 - **macmini7:** у config.yaml мають бути **tls-san: 192.168.100.6** і **tls-san: 192.168.200.6** (IP, з якого master-node/beelinkeqr5 підключаються до macmini7).
 - **beelinkeqr5:** **tls-san: 192.168.100.2**.
 - Після зміни config обов’язково: `k3s certificate rotate --service etcd` на кожній ноді, потім `systemctl restart k3s`.
+- **Якщо на beelinkeqr5** логи: `"192.168.100.1" does not match` — це master-node підключається з 192.168.100.1. На **master-node**: має бути `tls-san: 192.168.100.1`, потім restart → rotate etcd → restart.
+- **Перевірка SAN у сертифікаті:**  
+  `openssl x509 -in /var/lib/rancher/k3s/server/tls/etcd/peer-server-client.crt -noout -text | grep -A1 "Subject Alternative Name"`
 - Детальніше — **FIX_ETCD_TLS_RECOVERY.md**.
