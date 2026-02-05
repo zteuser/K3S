@@ -35,8 +35,8 @@ spec:
         args:
           - |
             mkdir -p /loki/tsdb-shipper-cache /loki/chunks /loki/rules /loki/compactor
-            chown -R 10001:10001 /loki || true
-            chmod -R 755 /loki || true
+            chown -R 10001:10001 /loki
+            chmod -R 775 /loki
         securityContext:
           runAsUser: 0
           runAsGroup: 0

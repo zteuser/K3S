@@ -38,9 +38,15 @@ kubectl -n monitoring get svc loki
 kubectl -n monitoring logs -l app=loki --tail=20
 ```
 
-## Permission denied у tsdb-shipper-cache (CrashLoopBackOff)
+## Permission denied у tsdb-shipper-cache
 
-Якщо Loki падає з помилкою **permission denied** на `/loki/tsdb-shipper-cache/...`, файли на томі мають неправильного власника (наприклад root). Виправлення:
+Якщо в Grafana при запиті до Loki з’являється **"mkdir /loki/tsdb-shipper-cache/... permission denied"** або под Loki падає з такою ж помилкою — на томі неправильні права (наприклад root). Спочатку перезапустіть под, щоб init-контейнер знову виконав `chown`/`chmod`:
+
+```bash
+kubectl -n monitoring delete pod -l app=loki
+```
+
+Дочекайтеся нового Running-пода, потім повторите запит у Grafana. Якщо помилка лишається — виконайте кроки нижче (Job для примусового chown).
 
 1. Запустити одноразовий Job, який змінить власника всього в `/loki` на UID 10001:
    ```bash
