@@ -18,8 +18,8 @@ spec:
       # Планувати лише на master-node: на worker-нодах часто "no route to host" до API (10.43.0.1)
       # та Loki; Loki теж на master-node. Щоб збирати логи з усіх нод — виправте мережу між нодами
       # і приберіть nodeSelector.
-      nodeSelector:
-        kubernetes.io/hostname: master-node
+      ##nodeSelector:
+      ##  kubernetes.io/hostname: master-node
       hostNetwork: false
       hostPID: false
       tolerations:
