@@ -67,7 +67,7 @@
           { "selected": false, "text": "warn", "value": " | json | level=~\"warn\"" },
           { "selected": false, "text": "error", "value": " | json | level=~\"error\"" }
         ],
-        "query": "",
+        "query": " : All,  | json | level=~\"debug\" : debug,  | json | level=~\"info\" : info,  | json | level=~\"warn\" : warn,  | json | level=~\"error\" : error",
         "skipUrlSync": false,
         "type": "custom"
       },
