@@ -53,6 +53,7 @@ resources:
   - promtail/clusterrolebinding.yaml
   - promtail/configmap.yaml
   - promtail/daemonset.yaml
+  - promtail/service.yaml
 
 # Не використовуємо commonLabels: вони додають мітки до spec.selector у Deployment/DaemonSet,
 # а selector незмінний після створення — apply падає з "field is immutable" на вже створених ресурсах.

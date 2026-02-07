@@ -33,7 +33,10 @@ kubectl apply -f manifests/monitoring/promtail/clusterrole.yaml
 kubectl apply -f manifests/monitoring/promtail/clusterrolebinding.yaml
 kubectl apply -f manifests/monitoring/promtail/configmap.yaml
 kubectl apply -f manifests/monitoring/promtail/daemonset.yaml
+kubectl apply -f manifests/monitoring/promtail/service.yaml
 ```
+
+Service потрібен для дашборду Grafana 20881 (Promtail Monitoring): Prometheus скрапить метрики Promtail через endpoints discovery. Детальніше — **`manifests/monitoring/PROMTAIL_DASHBOARD_20881.md`**.
 
 ## Перевірка
 
