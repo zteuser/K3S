@@ -140,3 +140,13 @@ data:
           - target_label: __address__
             # Use FQDN to avoid reliance on search domains
             replacement: snmp-exporter.monitoring.svc.cluster.local:9116
+
+      # Victron MultiPlus (BLE Instant Readout → victron_prometheus_exporter на хості beelinkeqr5)
+      - job_name: 'victron-inverter'
+        static_configs:
+          - targets: ['192.168.1.19:9091']
+            labels:
+              node: 'beelinkeqr5'
+              device: 'victron-multiplus'
+        scrape_interval: 60s
+        scrape_timeout: 25s
