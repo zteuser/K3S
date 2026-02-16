@@ -65,6 +65,8 @@
    ```
 2. Або імпортуйте вручну: Dashboards → Import → Upload JSON file → виберіть `manifests/monitoring/grafana/dashboards/cluster-logs-loki.json`.
 
+**Якщо панель «Logs (content)» показує «No data»:** перевірте, що у фільтрі **Datasource** обрано **Loki** (датасорс з `uid: loki` у provisioning). Переконайтеся, що Loki і Promtail поди в стані Running і що в **Explore → Loki** запит `{job=~"kubernetes-pods|journal"}` за останню годину повертає логи. Якщо датасорс був створений без `uid`, перезапустіть Grafana після оновлення `configmap-datasources.yaml` (Loki з `uid: loki`).
+
 ---
 
 ## Підсумок

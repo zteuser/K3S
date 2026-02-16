@@ -42,6 +42,12 @@
 
 Після цього панелі метрик (Promtail Version, Active Files, Current Sent Bytes тощо) та панель «Promtail Recent Logs» мають показувати дані.
 
+## Помилка «Templating: Datasource … was not found»
+
+Якщо при відкритті дашборду 20881 з’являється **«Templating Failed to upgrade legacy queries Datasource PBFA97CFB590B2093 was not found»** (або інший UID) — дашборд імпортовано з посиланням на датасорси автора шаблону, яких немає у вашій Grafana.
+
+**Що зробити:** у Grafana відкрийте дашборд **Promtail Monitoring**, натисніть **Dashboard settings** (іконка шестерні) → вкладка **Variables**. Для змінних **Datasource Loki** та **Datasource Prometheus** у полі **Current** виберіть ваші датасорси **Loki** та **Prometheus** (ті, що налаштовані в **Connections → Data sources**). Збережіть дашборд. Після цього помилка templating зникне і панелі зможуть брати дані.
+
 ## Якщо все ще «No data»
 
 - Перевірте, що поди Promtail слухають 9080: `kubectl -n monitoring get pods -l app=promtail -o wide` і що Service існує: `kubectl -n monitoring get svc promtail`.

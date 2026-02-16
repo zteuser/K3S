@@ -41,7 +41,7 @@
   "templating": {
     "list": [
       {
-        "current": { "selected": false, "text": "Loki", "value": "Loki" },
+        "current": { "selected": true, "text": "Loki", "value": "loki" },
         "hide": 0,
         "includeAll": false,
         "label": "Datasource",
