@@ -50,11 +50,13 @@
 
 1. Відкрийте дашборд **Promtail Monitoring - Metrics and Logs**.
 2. Натисніть **Dashboard settings** (іконка шестерні зверху справа) → вкладка **Variables**.
-3. У списку змінних знайдіть **Datasource Loki**. У полі **Current** / **Value** виберіть ваш датасорс **Loki** (той самий, що в **Connections → Data sources**, з UID `loki`).
-4. Аналогічно для **Datasource Prometheus**: у **Current** виберіть **Prometheus** (UID `prometheus`).
-5. Натисніть **Save dashboard** (зберегти дашборд). Якщо не зберегти, після оновлення сторінки помилка повернеться.
+3. У списку змінних знайдіть змінну з попередженням (жовтий трикутник):
+   - **`datasource`** (для Loki) — натисніть на неї (або Edit), у полі вибору датасорсу виберіть ваш **Loki** (з **Connections → Data sources**, UID `loki`).
+   - **`datasourceProm`** (для Prometheus) — аналогічно виберіть **Prometheus** (UID `prometheus`).
+   Інші назви в інших версіях шаблону: «Datasource Loki» / «Datasource Prometheus» — суть та сама: вибрати ваші Loki та Prometheus.
+4. Натисніть **Save dashboard** (синя кнопка зверху). Без збереження після оновлення сторінки попередження й помилки повернуться.
 
-Після збереження панелі мають підхопити правильні датасорси і помилка «was not found» зникне. У фільтрах дашборду також виберіть **Label Value** = **promtail** для логових панелей.
+Після збереження попередження біля `datasource` і `datasourceProm` мають зникнути, панелі — показувати дані. У фільтрах дашборду виберіть **Label Value** = **promtail** для логових панелей.
 
 ## Якщо все ще «No data»
 
