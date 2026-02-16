@@ -1,16 +1,23 @@
-# Виправлення Loki: permission denied у tsdb-shipper-cache
+# Виправлення Loki: permission denied у tsdb-shipper-*
 
 ## Проблема
 
 Под Loki в стані **CrashLoopBackOff**, у логах:
 
 ```
-open /loki/tsdb-shipper-cache/index_20484/fake/...tsdb: permission denied
-remove /loki/tsdb-shipper-cache/...: permission denied
+unlinkat /loki/tsdb-shipper-active/scratch/filesystem_2020-10-24: permission denied
+removing tsdb scratch dir
 error initialising module: store
 ```
 
-Loki запускається під користувачем **10001** (runAsUser: 10001). Файли/директорії в `/loki` (зокрема `tsdb-shipper-cache`) мають неправильного власника (наприклад root), тому контейнер не може їх читати або видаляти.
+або раніше:
+
+```
+open /loki/tsdb-shipper-cache/...: permission denied
+remove /loki/tsdb-shipper-cache/...: permission denied
+```
+
+Loki запускається під користувачем **10001** (runAsUser: 10001). Директорії `tsdb-shipper-cache` та **tsdb-shipper-active/scratch** мають бути доступні для запису/видалення; якщо вони створені root або з неправильними правами, контейнер падає при старті.
 
 ## Рішення
 
@@ -21,6 +28,9 @@ Loki запускається під користувачем **10001** (runAsUs
 **Кроки (з будь-якої ноди з kubectl):**
 
 ```bash
+# 0. Якщо Job вже запускали раніше — видалити його (іменований Job не оновлюється)
+kubectl -n monitoring delete job loki-fix-permissions --ignore-not-found
+
 # 1. Запустити Job (має заплануватися на master-node, де крутиться Loki)
 kubectl apply -f manifests/monitoring/loki/job-fix-permissions.yaml
 
