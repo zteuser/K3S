@@ -81,22 +81,28 @@ spec:
           limits:
             memory: "512Mi"
             cpu: "500m"
-        # /ready повертає 503 до повної готовності (WAL, compactor "waiting 10m for ring" тощо)
+        # Доки startupProbe не пройде, liveness/readiness не виконуються — уникаємо подій 503 під час старту
+        startupProbe:
+          httpGet:
+            path: /ready
+            port: 3100
+          initialDelaySeconds: 60
+          periodSeconds: 15
+          failureThreshold: 40
+          timeoutSeconds: 10
         livenessProbe:
           httpGet:
             path: /ready
             port: 3100
-          initialDelaySeconds: 180
           periodSeconds: 15
-          failureThreshold: 45
+          failureThreshold: 6
           timeoutSeconds: 10
         readinessProbe:
           httpGet:
             path: /ready
             port: 3100
-          initialDelaySeconds: 180
           periodSeconds: 15
-          failureThreshold: 45
+          failureThreshold: 6
           timeoutSeconds: 10
       volumes:
       - name: loki-config
