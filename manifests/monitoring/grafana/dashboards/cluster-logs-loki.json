@@ -24,12 +24,12 @@
         {
           "datasource": { "type": "loki", "uid": "${DS_LOKI}" },
           "editorMode": "code",
-          "expr": "{job=~\"kubernetes-pods|journal\", namespace=~\"$namespace\", node=~\"$node\", pod=~\"$pod\"}${severity_pipeline}",
+          "expr": "{job=~\"kubernetes-pods|journal\", namespace=~\"$namespace\", node=~\"$node\", pod=~\"$pod\"}",
           "queryType": "range",
           "refId": "A"
         }
       ],
-      "description": "Текст поруч з часом — вміст повідомлення.",
+      "description": "Текст поруч з часом — вміст повідомлення. Фільтр Severity в UI залишено; фільтрацію по level можна робити через пошук у панелі.",
       "title": "Logs (content)",
       "type": "logs"
     }

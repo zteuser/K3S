@@ -42,11 +42,19 @@
 
 Після цього панелі метрик (Promtail Version, Active Files, Current Sent Bytes тощо) та панель «Promtail Recent Logs» мають показувати дані.
 
-## Помилка «Templating: Datasource … was not found»
+## Помилка «Datasource … was not found» (UID P8E80F9AEF21F6940 або інший)
 
-Якщо при відкритті дашборду 20881 з’являється **«Templating Failed to upgrade legacy queries Datasource PBFA97CFB590B2093 was not found»** (або інший UID) — дашборд імпортовано з посиланням на датасорси автора шаблону, яких немає у вашій Grafana.
+Якщо панелі показують **0** / **No data**, а в **Inspect → Error** з’являється **«Datasource P8E80F9AEF21F6940 was not found»** (або інший UID) — дашборд імпортовано з посиланням на датасорси автора шаблону (їх UID у вашій Grafana немає).
 
-**Що зробити:** у Grafana відкрийте дашборд **Promtail Monitoring**, натисніть **Dashboard settings** (іконка шестерні) → вкладка **Variables**. Для змінних **Datasource Loki** та **Datasource Prometheus** у полі **Current** виберіть ваші датасорси **Loki** та **Prometheus** (ті, що налаштовані в **Connections → Data sources**). Збережіть дашборд. Після цього помилка templating зникне і панелі зможуть брати дані.
+**Що зробити (обов’язково збережіть дашборд):**
+
+1. Відкрийте дашборд **Promtail Monitoring - Metrics and Logs**.
+2. Натисніть **Dashboard settings** (іконка шестерні зверху справа) → вкладка **Variables**.
+3. У списку змінних знайдіть **Datasource Loki**. У полі **Current** / **Value** виберіть ваш датасорс **Loki** (той самий, що в **Connections → Data sources**, з UID `loki`).
+4. Аналогічно для **Datasource Prometheus**: у **Current** виберіть **Prometheus** (UID `prometheus`).
+5. Натисніть **Save dashboard** (зберегти дашборд). Якщо не зберегти, після оновлення сторінки помилка повернеться.
+
+Після збереження панелі мають підхопити правильні датасорси і помилка «was not found» зникне. У фільтрах дашборду також виберіть **Label Value** = **promtail** для логових панелей.
 
 ## Якщо все ще «No data»
 

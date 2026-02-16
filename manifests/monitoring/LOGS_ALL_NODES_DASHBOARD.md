@@ -67,6 +67,8 @@
 
 **Якщо панель «Logs (content)» показує «No data»:** перевірте, що у фільтрі **Datasource** обрано **Loki** (датасорс з `uid: loki` у provisioning). Переконайтеся, що Loki і Promtail поди в стані Running і що в **Explore → Loki** запит `{job=~"kubernetes-pods|journal"}` за останню годину повертає логи. Якщо датасорс був створений без `uid`, перезапустіть Grafana після оновлення `configmap-datasources.yaml` (Loki з `uid: loki`).
 
+**Якщо в Inspect панелі помилка «Status: 500 … parse error … unexpected IDENTIFIER»:** це викликав складний pipeline у змінній Severity (regexp з backticks). У дашборді з нього прибрано підстановку `${severity_pipeline}` у запит — тепер використовується лише селектор за лейблами. Фільтр Severity в UI залишено; фільтрацію по level можна робити через пошук у панелі логів.
+
 ---
 
 ## Підсумок
