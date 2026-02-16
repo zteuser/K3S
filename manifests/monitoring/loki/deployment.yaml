@@ -81,21 +81,22 @@ spec:
           limits:
             memory: "512Mi"
             cpu: "500m"
+        # /ready повертає 503 до повної готовності (WAL, compactor "waiting 10m for ring" тощо)
         livenessProbe:
           httpGet:
             path: /ready
             port: 3100
-          initialDelaySeconds: 120
-          periodSeconds: 10
-          failureThreshold: 12
+          initialDelaySeconds: 180
+          periodSeconds: 15
+          failureThreshold: 45
           timeoutSeconds: 10
         readinessProbe:
           httpGet:
             path: /ready
             port: 3100
-          initialDelaySeconds: 120
-          periodSeconds: 10
-          failureThreshold: 18
+          initialDelaySeconds: 180
+          periodSeconds: 15
+          failureThreshold: 45
           timeoutSeconds: 10
       volumes:
       - name: loki-config

@@ -95,7 +95,7 @@ kubectl -n monitoring delete pod -l app=loki
 
 ### Readiness probe 503
 
-Под у статусі Running, але в Events — **Readiness probe failed: HTTP 503**. Це тимчасово: Loki стає ready після WAL recovery та приєднання ingester до ring (~2–3 хв після старту). У deployment вже задано `readinessProbe.initialDelaySeconds: 90` та `failureThreshold: 18` — якщо після застосування манифестів проблема лишається, просто почекайте кілька хвилин або перезапустіть под.
+Под у статусі Running, але в Events — **Readiness/Liveness probe failed: HTTP 503**. Це тимчасово: Loki повертає 200 на `/ready` лише після WAL recovery, приєднання до ring і стабілізації compactor (у логах буває «waiting 10m0s for ring to stay stable»). У deployment задано `initialDelaySeconds: 180` та `failureThreshold: 45` (period 15s) — до ~14 хв на старт. Якщо події лишаються, дочекайтеся готовності пода або перезапустіть под.
 
 ### "entry too far behind"
 
