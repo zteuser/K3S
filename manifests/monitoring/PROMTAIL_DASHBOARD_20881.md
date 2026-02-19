@@ -50,13 +50,15 @@
 
 1. Відкрийте дашборд **Promtail Monitoring - Metrics and Logs**.
 2. Натисніть **Dashboard settings** (іконка шестерні зверху справа) → вкладка **Variables**.
-3. У списку змінних знайдіть змінну з попередженням (жовтий трикутник):
-   - **`datasource`** (для Loki) — натисніть на неї (або Edit), у полі вибору датасорсу виберіть ваш **Loki** (з **Connections → Data sources**, UID `loki`).
-   - **`datasourceProm`** (для Prometheus) — аналогічно виберіть **Prometheus** (UID `prometheus`).
-   Інші назви в інших версіях шаблону: «Datasource Loki» / «Datasource Prometheus» — суть та сама: вибрати ваші Loki та Prometheus.
+3. У списку змінних знайдіть змінну з попередженням (жовтий трикутник) і натисніть на неї:
+   - **`datasource`** (Label: Datasource Loki): у блоці **Data source options** поле **Instance name filter** за замовчуванням заповнене regex на кшталт `/.*-(.*)-.*/` — він відфільтровує лише назви з двома дефісами, тому ваш датасорс **Loki** не потрапляє в список. **Очистіть це поле** (залиште порожнім), збережіть змінну — у списку з’явиться **Loki**; виберіть його як значення і знову збережіть змінну.
+   - **`datasourceProm`** (Label: Datasource Prometheus): те саме — **очистіть Instance name filter** (залиште порожнім), збережіть змінну, виберіть **Prometheus** і збережіть.
+   Інші назви в інших версіях шаблону: «Datasource Loki» / «Datasource Prometheus» — суть та сама.
 4. Натисніть **Save dashboard** (синя кнопка зверху). Без збереження після оновлення сторінки попередження й помилки повернуться.
 
 Після збереження попередження біля `datasource` і `datasourceProm` мають зникнути, панелі — показувати дані. У фільтрах дашборду виберіть **Label Value** = **promtail** для логових панелей.
+
+**Якщо після очищення Instance name filter прев’ю показує «No data sources found»:** переконайтеся, що в **Connections → Data sources** є датасорс **Loki** (Type: Loki). Якщо його немає — застосуйте provisioning і перезапустіть Grafana: `kubectl apply -f manifests/monitoring/grafana/configmap-datasources.yaml`, `kubectl -n monitoring rollout restart deployment/grafana`. Якщо Loki є в списку датасорсів — натисніть **Apply** у формі змінної, потім **Save dashboard**; іноді прев’ю оновлюється після збереження. Можна також вийти з облікового запису і увійти знову, потім повторити вибір датасорсу в змінній.
 
 ## Якщо все ще «No data»
 
