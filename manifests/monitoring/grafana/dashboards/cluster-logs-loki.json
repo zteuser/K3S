@@ -24,7 +24,7 @@
         {
           "datasource": { "type": "loki", "uid": "${DS_LOKI}" },
           "editorMode": "code",
-          "expr": "{job=~\"kubernetes-pods|journal\", namespace=~\"$namespace\", node=~\"$node\", pod=~\"$pod\"}${severity_pipeline}",
+          "expr": "{job=~\"kubernetes-pods|journal\", namespace=~\"$namespace\", node=~\"$node\", pod=~\"$pod\"}${severity_pipeline:raw}",
           "queryType": "range",
           "refId": "A"
         }
