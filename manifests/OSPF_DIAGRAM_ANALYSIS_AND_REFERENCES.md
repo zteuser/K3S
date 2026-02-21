@@ -2,7 +2,9 @@
 
 Джерело: **Syhiv OSPF.pdf** (фінальна діаграма OSPF-зв'язності).
 
-**Поточний стан:** у OSPF беруть участь **чотири вузли** — Amper master, Amper worker, Syhiv17, VRN625. Ноди **macmini7** та **beelinkeqr5** мають WireGuard-тунелі до Amper, але **не приймають участі в OSPF**; вони підключені до роутерів Syhiv17 та VRN625, які забезпечують маршрутизацію до них.
+**Важливо:** з лютого 2026 маршрутизація між цими вузлами виконується протоколом **BGP**, а не OSPF. Поточна схема та діаграма — **BGP_ROUTING_DIAGRAM.md**; фіксація переходу — **OSPF_TO_BGP_MIGRATION_COMPLETED.md**. Документ нижче описує **історичну** OSPF-схему та посилання на неї.
+
+**Поточний стан (історичний для OSPF):** у OSPF брали участь **чотири вузли** — Amper master, Amper worker, Syhiv17, VRN625. Ноди **macmini7** та **beelinkeqr5** мають WireGuard-тунелі до Amper, але **не приймають участі в OSPF**; вони підключені до роутерів Syhiv17 та VRN625, які забезпечують маршрутизацію до них.
 
 ---
 
@@ -89,6 +91,7 @@
 
 ## 5. Короткий підсумок
 
-- **Syhiv OSPF.pdf** — фінальна діаграма OSPF: 4 вузли (Amper master/worker, VRN625, Syhiv17), стани Full, point-to-multipoint non-broadcast / point-to-point, явні neighbor.
+- **Syhiv OSPF.pdf** — фінальна діаграма OSPF (історична): 4 вузли (Amper master/worker, VRN625, Syhiv17), стани Full, point-to-multipoint non-broadcast / point-to-point, явні neighbor.
+- **Поточна маршрутизація:** **BGP** (з лютого 2026). Діаграма та конфіги — **BGP_ROUTING_DIAGRAM.md**, **manifests/bgp-configs/**, **OSPF_TO_BGP_MIGRATION_COMPLETED.md**.
 - **Наявні посилання:** у проекті використовуються **Syhiv VPN-2.pdf** та текстова згадка **Syhiv VPN-3 OSPF**; посилання на файл **Syhiv OSPF.pdf** поки **немає**.
 - **Потенційні посилання:** доцільно додати **Syhiv OSPF.pdf** у **FRR_OSPF_CONFIG_EXAMPLES.md**, **OSPF_MASTER_WORKER_NO_DIRECT_LINK.md**, **PLAN_NETWORK_AND_REBUILD_CONTROL_PLANE.md**, за бажанням — у **OSPF_ROUTERS_HOST_ROUTES_32.md** та **WIREGUARD_OSPF_COMPATIBILITY_ANALYSIS.md**.
