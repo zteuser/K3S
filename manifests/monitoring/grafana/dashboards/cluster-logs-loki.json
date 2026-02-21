@@ -24,7 +24,7 @@
         {
           "datasource": { "type": "loki", "uid": "${DS_LOKI}" },
           "editorMode": "code",
-          "expr": "{job=~\"kubernetes-pods|journal\", namespace=~\"$namespace\", node=~\"$node\", pod=~\"$pod\"}",
+          "expr": "{job=~\"kubernetes-pods|journal\", namespace=~\"$namespace\", node=~\"$node\", pod=~\"$pod\"}${severity_pipeline}",
           "queryType": "range",
           "refId": "A"
         }
@@ -55,20 +55,20 @@
         "type": "datasource"
       },
       {
-        "current": { "selected": true, "text": "All", "value": "" },
+        "current": { "selected": true, "text": "All", "value": " | line_format \"{{__line__}}\"" },
         "hide": 0,
         "includeAll": false,
         "label": "Severity",
         "multi": false,
         "name": "severity_pipeline",
         "options": [
-          { "selected": true, "text": "All", "value": "" },
-          { "selected": false, "text": "debug", "value": " | regexp `\\\"level\\\":\\s*\\\"(?P<level>[^\\\"]+)\\\"` | level=~\"debug\"" },
-          { "selected": false, "text": "info", "value": " | regexp `\\\"level\\\":\\s*\\\"(?P<level>[^\\\"]+)\\\"` | level=~\"info\"" },
-          { "selected": false, "text": "warn", "value": " | regexp `\\\"level\\\":\\s*\\\"(?P<level>[^\\\"]+)\\\"` | level=~\"warn\"" },
-          { "selected": false, "text": "error", "value": " | regexp `\\\"level\\\":\\s*\\\"(?P<level>[^\\\"]+)\\\"` | level=~\"error\"" }
+          { "selected": true, "text": "All", "value": " | line_format \"{{__line__}}\"" },
+          { "selected": false, "text": "debug", "value": " | regexp `(?:level=|\\\"level\\\"\\s*:\\s*\\\")(?P<level>debug|info|warn|error)` | level=~\"debug\"" },
+          { "selected": false, "text": "info", "value": " | regexp `(?:level=|\\\"level\\\"\\s*:\\s*\\\")(?P<level>debug|info|warn|error)` | level=~\"info\"" },
+          { "selected": false, "text": "warn", "value": " | regexp `(?:level=|\\\"level\\\"\\s*:\\s*\\\")(?P<level>debug|info|warn|error)` | level=~\"warn\"" },
+          { "selected": false, "text": "error", "value": " | regexp `(?:level=|\\\"level\\\"\\s*:\\s*\\\")(?P<level>debug|info|warn|error)` | level=~\"error\"" }
         ],
-        "query": " : All,  | regexp `\\\"level\\\":\\s*\\\"(?P<level>[^\\\"]+)\\\"` | level=~\"debug\" : debug,  | regexp `\\\"level\\\":\\s*\\\"(?P<level>[^\\\"]+)\\\"` | level=~\"info\" : info,  | regexp `\\\"level\\\":\\s*\\\"(?P<level>[^\\\"]+)\\\"` | level=~\"warn\" : warn,  | regexp `\\\"level\\\":\\s*\\\"(?P<level>[^\\\"]+)\\\"` | level=~\"error\" : error",
+        "query": " | line_format \"{{__line__}}\" : All,  | regexp `(?:level=|\\\"level\\\"\\s*:\\s*\\\")(?P<level>debug|info|warn|error)` | level=~\"debug\" : debug,  | regexp `(?:level=|\\\"level\\\"\\s*:\\s*\\\")(?P<level>debug|info|warn|error)` | level=~\"info\" : info,  | regexp `(?:level=|\\\"level\\\"\\s*:\\s*\\\")(?P<level>debug|info|warn|error)` | level=~\"warn\" : warn,  | regexp `(?:level=|\\\"level\\\"\\s*:\\s*\\\")(?P<level>debug|info|warn|error)` | level=~\"error\" : error",
         "skipUrlSync": false,
         "type": "custom"
       },

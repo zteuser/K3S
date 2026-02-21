@@ -38,6 +38,21 @@ kubectl -n monitoring get svc loki
 kubectl -n monitoring logs -l app=loki --tail=20
 ```
 
+## 502 Bad Gateway / connection refused у Grafana (Cluster Logs, Explore → Loki)
+
+Якщо дашборд **Cluster Logs (Loki)** або **Explore → Loki** показує **502** і в помилці: `dial tcp ...:3100: connect: connection refused` — Grafana не може підключитися до Loki. Зазвичай це означає, що **под Loki не працює** або ще не слухає на порту 3100.
+
+1. **Статус пода і endpoints:**
+   ```bash
+   kubectl -n monitoring get pods -l app=loki
+   kubectl -n monitoring get endpoints loki
+   ```
+   - Под має бути **Running** і **Ready 1/1**. Якщо **Pending** — див. розділ «Якщо PVC лишається Pending» нижче.
+   - Якщо под у **CrashLoopBackOff** або **Error** — див. логи: `kubectl -n monitoring logs -l app=loki --tail=50`. Часті причини: **permission denied** на томі (див. «Permission denied у tsdb-shipper-cache» нижче), помилка в конфігу, недостатньо пам’яті.
+   - **Endpoints** для `loki` мають містити хоча б одну адресу (IP пода). Якщо endpoints порожні — под не Ready, Grafana отримує connection refused.
+
+2. **Після виправлення** (под Running, endpoints не порожні) оновіть дашборд у Grafana або повторіть запит у Explore.
+
 ## Permission denied у tsdb-shipper-cache
 
 Якщо в Grafana при запиті до Loki з’являється **"mkdir /loki/tsdb-shipper-cache/... permission denied"** або под Loki падає з такою ж помилкою — на томі неправильні права (наприклад root). Спочатку перезапустіть под, щоб init-контейнер знову виконав `chown`/`chmod`:

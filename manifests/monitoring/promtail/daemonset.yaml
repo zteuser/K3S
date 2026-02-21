@@ -31,9 +31,16 @@ spec:
           effect: NoSchedule
       containers:
       - name: promtail
-        image: grafana/promtail:3.0.0
+        env:
+          - name: NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+        # 3.0.0: Kubernetes discovery повертає 0 подів; 2.9.3 теж; використовуємо promtail-static (static_config) для job=promtail
+        image: grafana/promtail:2.9.3
         args:
           - -config.file=/etc/promtail/promtail.yaml
+          - -config.expand-env=true
         ports:
         - containerPort: 9080
           name: http

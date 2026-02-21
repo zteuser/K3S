@@ -1,5 +1,7 @@
 # Виправлення "No data" у розділі Pods дашборду kube-state-metrics-v2
 
+**Якщо панелі показують помилку «Datasource … was not found»** (наприклад `Datasource PBFA97CFB59082093 was not found`) — спочатку виправте датасорс: див. **grafana/FIX_DATASOURCE_NOT_FOUND.md**. Після цього поверніться сюди, якщо «No data» лишиться.
+
 ## Симптоми
 
 - Дашборд **kube-state-metrics-v2** (Grafana) у розділі **Pods** показує "No data" для панелей:

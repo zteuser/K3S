@@ -25,6 +25,8 @@ data:
       - job_name: kubernetes-pods
         kubernetes_sd_configs:
           - role: pod
+            namespaces:
+              names: [monitoring, default, kube-system]
         relabel_configs:
           # Обов'язково: Promtail збирає лише логи подів на цій же ноді
           - source_labels: [__meta_kubernetes_pod_node_name]
@@ -54,10 +56,13 @@ data:
           - source_labels: [__meta_kubernetes_pod_node_name]
             target_label: instance
 
-      # Окремий job лише для логів самого Promtail → Loki з job=promtail (дашборд 20881) → Loki з job=promtail (дашборд 20881)
+      # Окремий job лише для логів самого Promtail → Loki з job=promtail (дашборд 20881)
+      # Kubernetes discovery (вище) часто повертає 0 подів у k3s; fallback — static_config з glob по поточній ноді
       - job_name: promtail
         kubernetes_sd_configs:
           - role: pod
+            namespaces:
+              names: [monitoring]
         relabel_configs:
           - source_labels: [__meta_kubernetes_pod_node_name]
             target_label: __host__
@@ -83,6 +88,16 @@ data:
             regex: '([^/]+)/([^/]+)/([^/]+)/([^/]+)'
             target_label: __path__
             replacement: /var/log/pods/$1_$2_$3/$4/*.log
+
+      # Workaround: коли discovery 0/0 — статичний job з glob по логах Promtail на цій ноді (NODE_NAME з downward API)
+      - job_name: promtail-static
+        static_configs:
+          - targets: [localhost]
+            labels:
+              job: promtail
+              instance: ${NODE_NAME}
+              namespace: monitoring
+              __path__: /var/log/pods/monitoring_promtail-*_*/promtail/*.log
 
       # Логи systemd journal (k3s, k3s-agent тощо)
       - job_name: journal

@@ -1,5 +1,11 @@
 # CoreDNS у k3s
 
+## Помилки «Failed to watch» / «watch ended with error»
+
+Якщо в логах CoreDNS з’являються `[ERROR] plugin/kubernetes: Failed to watch` та `Plugins not ready: "kubernetes"`, див. покрокову діагностику та виправлення в **FIX_COREDNS_FAILED_TO_WATCH.md**.
+
+---
+
 ## Тест резолву hostname (DNS)
 
 Перевірити, як CoreDNS резолвить внутрішні та зовнішні імена:
