@@ -98,6 +98,29 @@ data:
         scrape_interval: 30s
         scrape_timeout: 10s
 
+      # Alloy — метрики для дашборду Alloy (порт 12345)
+      - job_name: 'alloy'
+        kubernetes_sd_configs:
+          - role: endpoints
+            namespaces:
+              names: [monitoring]
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_service_label_app]
+            regex: alloy
+            action: keep
+          - source_labels: [__meta_kubernetes_endpoint_port_name]
+            regex: http
+            action: keep
+          - source_labels: [__meta_kubernetes_pod_node_name]
+            target_label: instance
+          - source_labels: [__meta_kubernetes_pod_ip]
+            target_label: __address__
+            replacement: $1:12345
+          - target_label: job
+            replacement: alloy
+        scrape_interval: 30s
+        scrape_timeout: 10s
+
       # SNMP Exporter для моніторингу роутерів
       - job_name: 'snmp-routers'
         scrape_interval: 60s  # Інтервал опитування роутерів (60 секунд)

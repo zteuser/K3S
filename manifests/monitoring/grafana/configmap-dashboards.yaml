@@ -9,6 +9,14 @@ data:
   dashboards.yaml: |
     apiVersion: 1
     providers:
+      - name: 'dashboards'
+        orgId: 1
+        folder: 'Dashboards'
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /etc/grafana/provisioning/dashboards-json
       - name: 'snmp'
         orgId: 1
         folder: 'SNMP'
@@ -16,7 +24,7 @@ data:
         disableDeletion: false
         editable: true
         options:
-          path: /etc/grafana/provisioning/dashboards-json
+          path: /etc/grafana/provisioning/dashboards-snmp
 
 ---
 apiVersion: v1
@@ -27,384 +35,26 @@ metadata:
   labels:
     app: grafana
 data:
-  snmp-routers.json: |
-    {
-      "annotations": {
-        "list": [
-          {
-            "builtIn": 1,
-            "datasource": {
-              "type": "grafana",
-              "uid": "-- Grafana --"
-            },
-            "enable": true,
-            "hide": true,
-            "iconColor": "rgba(0, 211, 255, 1)",
-            "name": "Annotations & Alerts",
-            "type": "dashboard"
-          }
-        ]
-      },
-      "editable": true,
-      "fiscalYearStartMonth": 0,
-      "graphTooltip": 0,
-      "id": null,
-      "links": [],
-      "panels": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "mappings": [
-                {
-                  "options": {
-                    "0": {
-                      "text": "DOWN"
-                    },
-                    "1": {
-                      "text": "UP"
-                    }
-                  },
-                  "type": "value"
-                }
-              ],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "red",
-                    "value": null
-                  },
-                  {
-                    "color": "green",
-                    "value": 1
-                  }
-                ]
-              },
-              "unit": "none"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 5,
-            "w": 8,
-            "x": 0,
-            "y": 0
-          },
-          "id": 1,
-          "options": {
-            "colorMode": "value",
-            "graphMode": "none",
-            "justifyMode": "auto",
-            "orientation": "auto",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "textMode": "value"
-          },
-          "pluginVersion": "10.2.2",
-          "targets": [
-            {
-              "editorMode": "code",
-              "expr": "up{job=\"snmp-routers\", router_name=~\"$router\"}",
-              "legendFormat": "{{router_name}} ({{instance}})",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "repeat": "router",
-          "repeatDirection": "h",
-          "title": "Router availability (UP/DOWN)",
-          "type": "stat"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "unit": "h"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 5,
-            "w": 8,
-            "x": 8,
-            "y": 0
-          },
-          "id": 2,
-          "options": {
-            "colorMode": "value",
-            "graphMode": "none",
-            "justifyMode": "auto",
-            "orientation": "auto",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "textMode": "value"
-          },
-          "pluginVersion": "10.2.2",
-          "targets": [
-            {
-              "editorMode": "code",
-              "expr": "sysUpTime{job=\"snmp-routers\", router_name=~\"$router\"} / 360000",
-              "legendFormat": "{{router_name}}",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "repeat": "router",
-          "repeatDirection": "h",
-          "title": "Uptime (hours)",
-          "type": "stat"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "unit": "bps"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 5,
-            "w": 8,
-            "x": 16,
-            "y": 0
-          },
-          "id": 3,
-          "options": {
-            "legend": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "displayMode": "table",
-              "placement": "right",
-              "showLegend": true
-            },
-            "tooltip": {
-              "mode": "single",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "10.2.2",
-          "targets": [
-            {
-              "editorMode": "code",
-              "expr": "topk(10, rate(ifHCInOctets{job=\"snmp-routers\", router_name=~\"$router\"}[5m]) * 8) * on(instance, ifIndex) group_left(ifDescr) ifDescr{job=\"snmp-routers\", router_name=~\"$router\"}",
-              "legendFormat": "in {{ifDescr}}",
-              "range": true,
-              "refId": "A"
-            },
-            {
-              "editorMode": "code",
-              "expr": "topk(10, rate(ifHCOutOctets{job=\"snmp-routers\", router_name=~\"$router\"}[5m]) * 8) * on(instance, ifIndex) group_left(ifDescr) ifDescr{job=\"snmp-routers\", router_name=~\"$router\"}",
-              "legendFormat": "out {{ifDescr}}",
-              "range": true,
-              "refId": "B"
-            }
-          ],
-          "repeat": "router",
-          "repeatDirection": "h",
-          "title": "Top interface traffic (bps) — ifHC* counters",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "unit": "ops"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 5
-          },
-          "id": 4,
-          "options": {
-            "legend": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "displayMode": "table",
-              "placement": "right",
-              "showLegend": true
-            },
-            "tooltip": {
-              "mode": "single",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "10.2.2",
-          "targets": [
-            {
-              "editorMode": "code",
-              "expr": "topk(10, rate(ifInErrors{job=\"snmp-routers\", router_name=~\"$router\"}[5m])) * on(instance, ifIndex) group_left(ifDescr) ifDescr{job=\"snmp-routers\", router_name=~\"$router\"}",
-              "legendFormat": "inErrors {{ifDescr}}",
-              "range": true,
-              "refId": "A"
-            },
-            {
-              "editorMode": "code",
-              "expr": "topk(10, rate(ifOutErrors{job=\"snmp-routers\", router_name=~\"$router\"}[5m])) * on(instance, ifIndex) group_left(ifDescr) ifDescr{job=\"snmp-routers\", router_name=~\"$router\"}",
-              "legendFormat": "outErrors {{ifDescr}}",
-              "range": true,
-              "refId": "B"
-            }
-          ],
-          "repeat": "router",
-          "repeatDirection": "h",
-          "title": "Top interface errors (per second)",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "unit": "none"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 12,
-            "y": 5
-          },
-          "id": 5,
-          "options": {
-            "legend": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "displayMode": "table",
-              "placement": "right",
-              "showLegend": true
-            },
-            "tooltip": {
-              "mode": "single",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "10.2.2",
-          "targets": [
-            {
-              "editorMode": "code",
-              "expr": "ifOperStatus{job=\"snmp-routers\", router_name=~\"$router\"} * on(instance, ifIndex) group_left(ifDescr) ifDescr{job=\"snmp-routers\", router_name=~\"$router\"}",
-              "legendFormat": "{{ifDescr}} operStatus",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "repeat": "router",
-          "repeatDirection": "h",
-          "title": "Interface oper status (1=up, 2=down)",
-          "type": "timeseries"
-        }
-      ],
-      "refresh": "30s",
-      "schemaVersion": 38,
-      "style": "dark",
-      "tags": [
-        "snmp",
-        "routers",
-        "unifi",
-        "edgerouter"
-      ],
-      "templating": {
-        "list": [
-          {
-            "current": {
-              "selected": false,
-              "text": "Prometheus",
-              "value": "Prometheus"
-            },
-            "hide": 0,
-            "includeAll": false,
-            "label": "Datasource",
-            "multi": false,
-            "name": "DS_PROMETHEUS",
-            "options": [],
-            "query": "prometheus",
-            "refresh": 1,
-            "regex": "",
-            "skipUrlSync": false,
-            "type": "datasource"
-          },
-          {
-            "current": {
-              "selected": false,
-              "text": "vrn625 + syhiv17",
-              "value": [
-                "vrn625",
-                "syhiv17"
-              ]
-            },
-            "datasource": {
-              "type": "prometheus",
-              "uid": "${DS_PROMETHEUS}"
-            },
-            "definition": "label_values(up{job=\"snmp-routers\"}, router_name)",
-            "hide": 0,
-            "includeAll": false,
-            "label": "Routers",
-            "multi": true,
-            "name": "router",
-            "options": [],
-            "query": {
-              "query": "label_values(up{job=\"snmp-routers\"}, router_name)",
-              "refId": "PrometheusVariableQueryEditor-VariableQuery"
-            },
-            "refresh": 2,
-            "regex": "",
-            "skipUrlSync": false,
-            "sort": 1,
-            "type": "query"
-          }
-        ]
-      },
-      "time": {
-        "from": "now-6h",
-        "to": "now"
-      },
-      "timepicker": {},
-      "timezone": "browser",
-      "title": "SNMP Routers (vrn625 / syhiv17)",
-      "uid": "snmp-routers",
-      "version": 1,
-      "weekStart": ""
-    }
+  # Загальні дашборди (Alloy, Cluster Logs, Victron) — папка Dashboards
+  # snmp-routers винесено в grafana-dashboards-snmp (папка SNMP)
+  alloy.json: |
+    {"annotations":{"list":[]},"editable":true,"fiscalYearStartMonth":0,"graphTooltip":0,"id":null,"links":[],"panels":[{"datasource":{"type":"prometheus","uid":"${DS_PROMETHEUS}"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"red","value":null},{"color":"green","value":1}]}},"overrides":[]},"gridPos":{"h":4,"w":6,"x":0,"y":0},"id":1,"options":{"colorMode":"value","graphMode":"none","justifyMode":"auto","orientation":"auto","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"textMode":"value"},"targets":[{"datasource":{"type":"prometheus","uid":"${DS_PROMETHEUS}"},"expr":"count(up{job=\"alloy\"} == 1)","refId":"A"}],"title":"Alloy instances UP","type":"stat"},{"datasource":{"type":"prometheus","uid":"${DS_PROMETHEUS}"},"fieldConfig":{"defaults":{"color":{"mode":"palette-classic"},"custom":{"hideFrom":{"legend":false,"tooltip":false,"viz":false}},"mappings":[]},"overrides":[]},"gridPos":{"h":8,"w":12,"x":6,"y":0},"id":2,"options":{"legend":{"calcs":[],"displayMode":"list","placement":"bottom","showLegend":true},"tooltip":{"mode":"single","sort":"none"}},"targets":[{"datasource":{"type":"prometheus","uid":"${DS_PROMETHEUS}"},"expr":"up{job=\"alloy\"}","legendFormat":"{{instance}}","refId":"A"}],"title":"Alloy by instance (up)","type":"timeseries"},{"datasource":{"type":"prometheus","uid":"${DS_PROMETHEUS}"},"fieldConfig":{"defaults":{"color":{"mode":"palette-classic"},"custom":{"hideFrom":{"legend":false,"tooltip":false,"viz":false}},"mappings":[]},"overrides":[]},"gridPos":{"h":8,"w":12,"x":0,"y":8},"id":3,"options":{"legend":{"calcs":["mean","lastNotNull"],"displayMode":"table","placement":"right","showLegend":true},"tooltip":{"mode":"multi","sort":"desc"}},"targets":[{"datasource":{"type":"prometheus","uid":"${DS_PROMETHEUS}"},"expr":"alloy_runtime_component_health_state{job=\"alloy\"}","legendFormat":"{{component_id}} (health)","refId":"A"},{"datasource":{"type":"prometheus","uid":"${DS_PROMETHEUS}"},"expr":"alloy_component_controller_running_components{job=\"alloy\"}","legendFormat":"{{component_id}} ({{health_type}})","refId":"B"}],"title":"Alloy components health","description":"Health: alloy_runtime_component_health_state (newer Alloy) or alloy_component_controller_running_components. If empty, your Alloy build may not expose these metrics.","type":"timeseries"},{"datasource":{"type":"loki","uid":"${DS_LOKI}"},"gridPos":{"h":10,"w":24,"x":0,"y":16},"id":4,"options":{"dedupStrategy":"none","enableLogDetails":true,"prettifyLogMessage":true,"showCommonLabels":false,"showLabels":false,"showTime":true,"sortOrder":"Descending","wrapLogMessage":true},"targets":[{"datasource":{"type":"loki","uid":"${DS_LOKI}"},"editorMode":"code","expr":"{job=\"kubernetes-pods\", namespace=\"monitoring\", pod=~\"alloy-.*\"}${severity_pods:raw}","queryType":"range","refId":"A"}],"title":"Alloy pods logs","description":"Logs from Alloy pods. Filter by Severity (pods) in the dashboard variables (level=info/error/debug/warn).","type":"logs"},{"datasource":{"type":"loki","uid":"${DS_LOKI}"},"gridPos":{"h":10,"w":24,"x":0,"y":26},"id":5,"options":{"dedupStrategy":"none","enableLogDetails":true,"prettifyLogMessage":true,"showCommonLabels":false,"showLabels":false,"showTime":true,"sortOrder":"Descending","wrapLogMessage":true},"targets":[{"datasource":{"type":"loki","uid":"${DS_LOKI}"},"editorMode":"code","expr":"{job=\"journal\", node=~\"$node_journal\"}${severity_journal:raw}","queryType":"range","refId":"A"}],"title":"System logs (node / journal)","description":"Filter by Severity (journal) in the dashboard variables. Parses level from JSON (\"level\": \"info\") and logfmt (level=info).","type":"logs"},{"datasource":{"type":"loki","uid":"${DS_LOKI}"},"gridPos":{"h":12,"w":24,"x":0,"y":36},"id":6,"options":{"dedupStrategy":"none","enableLogDetails":true,"prettifyLogMessage":true,"showCommonLabels":false,"showLabels":false,"showTime":true,"sortOrder":"Descending","wrapLogMessage":true},"targets":[{"datasource":{"type":"loki","uid":"${DS_LOKI}"},"editorMode":"code","expr":"{job=\"kubernetes-pods\", namespace=~\"$log_namespace\", pod=~\"$log_pod\", node=~\"$log_node_pod\"}${severity_pods:raw}","queryType":"range","refId":"A"}],"title":"Cluster pod logs","description":"Filter by Severity (pods). If No data: 1) Restart Alloy after config change (job=kubernetes-pods). 2) On each node check: ls /var/log/pods. 3) Alloy must mount hostPath /var/log.","type":"logs"}],"refresh":"30s","schemaVersion":38,"style":"dark","tags":["alloy","loki","logs","monitoring"],"templating":{"list":[{"current":{"selected":true,"text":"Prometheus","value":"prometheus"},"hide":0,"includeAll":false,"label":"Datasource Prometheus","multi":false,"name":"DS_PROMETHEUS","options":[],"query":"prometheus","refresh":1,"regex":"","skipUrlSync":false,"type":"datasource"},{"current":{"selected":true,"text":"Loki","value":"loki"},"hide":0,"includeAll":false,"label":"Datasource Loki","multi":false,"name":"DS_LOKI","options":[],"query":"loki","refresh":1,"regex":"","skipUrlSync":false,"type":"datasource"},{"allValue":".+","current":{"selected":true,"text":"All","value":"$__all"},"datasource":{"type":"loki","uid":"${DS_LOKI}"},"definition":"label_values({job=\"journal\"}, node)","hide":0,"includeAll":true,"label":"Node (journal)","multi":true,"name":"node_journal","options":[],"query":"label_values({job=\"journal\"}, node)","refresh":2,"regex":"","skipUrlSync":false,"sort":1,"type":"query"},{"current":{"selected":true,"text":"All","value":" | line_format \"{{__line__}}\""},"hide":0,"includeAll":false,"label":"Severity (journal)","multi":false,"name":"severity_journal","options":[{"selected":true,"text":"All","value":" | line_format \"{{__line__}}\""},{"selected":false,"text":"debug","value":" | regexp `(?:level=|\\\"level\\\"\\s*\\x3A\\s*\\\")(?P<level>debug|info|warn|error)` | level=~\"debug\""},{"selected":false,"text":"info","value":" | regexp `(?:level=|\\\"level\\\"\\s*\\x3A\\s*\\\")(?P<level>debug|info|warn|error)` | level=~\"info\""},{"selected":false,"text":"warn","value":" | regexp `(?:level=|\\\"level\\\"\\s*\\x3A\\s*\\\")(?P<level>debug|info|warn|error)` | level=~\"warn\""},{"selected":false,"text":"error","value":" | regexp `(?:level=|\\\"level\\\"\\s*\\x3A\\s*\\\")(?P<level>debug|info|warn|error)` | level=~\"error\""}],"query":"All :  | line_format \"{{__line__}}\", debug :  | regexp `(?:level=|\\\"level\\\"\\s*\\x3A\\s*\\\")(?P<level>debug|info|warn|error)` | level=~\"debug\", info :  | regexp `(?:level=|\\\"level\\\"\\s*\\x3A\\s*\\\")(?P<level>debug|info|warn|error)` | level=~\"info\", warn :  | regexp `(?:level=|\\\"level\\\"\\s*\\x3A\\s*\\\")(?P<level>debug|info|warn|error)` | level=~\"warn\", error :  | regexp `(?:level=|\\\"level\\\"\\s*\\x3A\\s*\\\")(?P<level>debug|info|warn|error)` | level=~\"error\"","skipUrlSync":false,"type":"custom"},{"current":{"selected":true,"text":"All","value":" | line_format \"{{__line__}}\""},"hide":0,"includeAll":false,"label":"Severity (pods)","multi":false,"name":"severity_pods","options":[{"selected":true,"text":"All","value":" | line_format \"{{__line__}}\""},{"selected":false,"text":"debug","value":" | regexp `(?:level=|\\\"level\\\"\\s*\\x3A\\s*\\\")(?P<level>debug|info|warn|error)` | level=~\"debug\""},{"selected":false,"text":"info","value":" | regexp `(?:level=|\\\"level\\\"\\s*\\x3A\\s*\\\")(?P<level>debug|info|warn|error)` | level=~\"info\""},{"selected":false,"text":"warn","value":" | regexp `(?:level=|\\\"level\\\"\\s*\\x3A\\s*\\\")(?P<level>debug|info|warn|error)` | level=~\"warn\""},{"selected":false,"text":"error","value":" | regexp `(?:level=|\\\"level\\\"\\s*\\x3A\\s*\\\")(?P<level>debug|info|warn|error)` | level=~\"error\""}],"query":"All :  | line_format \"{{__line__}}\", debug :  | regexp `(?:level=|\\\"level\\\"\\s*\\x3A\\s*\\\")(?P<level>debug|info|warn|error)` | level=~\"debug\", info :  | regexp `(?:level=|\\\"level\\\"\\s*\\x3A\\s*\\\")(?P<level>debug|info|warn|error)` | level=~\"info\", warn :  | regexp `(?:level=|\\\"level\\\"\\s*\\x3A\\s*\\\")(?P<level>debug|info|warn|error)` | level=~\"warn\", error :  | regexp `(?:level=|\\\"level\\\"\\s*\\x3A\\s*\\\")(?P<level>debug|info|warn|error)` | level=~\"error\"","skipUrlSync":false,"type":"custom"},{"allValue":".+","current":{"selected":true,"text":"All","value":"$__all"},"datasource":{"type":"loki","uid":"${DS_LOKI}"},"definition":"label_values({job=\"kubernetes-pods\"}, namespace)","hide":0,"includeAll":true,"label":"Namespace","multi":true,"name":"log_namespace","options":[],"query":"label_values({job=\"kubernetes-pods\"}, namespace)","refresh":2,"regex":"","skipUrlSync":false,"sort":1,"type":"query"},{"allValue":".+","current":{"selected":true,"text":"All","value":"$__all"},"datasource":{"type":"loki","uid":"${DS_LOKI}"},"definition":"label_values({job=\"kubernetes-pods\", namespace=~\"$log_namespace\"}, pod)","hide":0,"includeAll":true,"label":"Pod","multi":true,"name":"log_pod","options":[],"query":"label_values({job=\"kubernetes-pods\", namespace=~\"$log_namespace\"}, pod)","refresh":2,"regex":"","skipUrlSync":false,"sort":1,"type":"query"},{"allValue":".+","current":{"selected":true,"text":"All","value":"$__all"},"datasource":{"type":"loki","uid":"${DS_LOKI}"},"definition":"label_values({job=\"kubernetes-pods\"}, node)","hide":0,"includeAll":true,"label":"Node (pods)","multi":true,"name":"log_node_pod","options":[],"query":"label_values({job=\"kubernetes-pods\"}, node)","refresh":2,"regex":"","skipUrlSync":false,"sort":1,"type":"query"}]},"time":{"from":"now-1h","to":"now"},"timepicker":{},"timezone":"browser","title":"Alloy (Metrics and Logs)","uid":"alloy","version":1,"weekStart":""}
 
   cluster-logs-loki.json: |
-    {"annotations":{"list":[]},"editable":true,"fiscalYearStartMonth":0,"graphTooltip":0,"id":null,"links":[],"panels":[{"datasource":{"type":"loki","uid":"${DS_LOKI}"},"gridPos":{"h":20,"w":24,"x":0,"y":0},"id":1,"options":{"dedupStrategy":"none","enableLogDetails":true,"prettifyLogMessage":true,"showCommonLabels":false,"showLabels":false,"showTime":true,"sortOrder":"Descending","wrapLogMessage":true},"targets":[{"datasource":{"type":"loki","uid":"${DS_LOKI}"},"editorMode":"code","expr":"{job=~\"kubernetes-pods|journal\", namespace=~\"$namespace\", node=~\"$node\", pod=~\"$pod\"}${severity_pipeline:raw}","queryType":"range","refId":"A"}],"description":"Текст поруч з часом — вміст повідомлення. Фільтр Severity додає LogQL pipeline до запиту.","title":"Logs (content)","type":"logs"}],"refresh":"30s","schemaVersion":38,"style":"dark","tags":["loki","logs","cluster","promtail"],"templating":{"list":[{"current":{"selected":true,"text":"Loki","value":"loki"},"hide":0,"includeAll":false,"label":"Datasource","multi":false,"name":"DS_LOKI","options":[],"query":"loki","refresh":1,"regex":"","skipUrlSync":false,"type":"datasource"},{"current":{"selected":true,"text":"All","value":" | line_format \"{{__line__}}\""},"hide":0,"includeAll":false,"label":"Severity","multi":false,"name":"severity_pipeline","options":[{"selected":true,"text":"All","value":" | line_format \"{{__line__}}\""},{"selected":false,"text":"debug","value":" | regexp `(?:level=|\\\"level\\\"\\s*:\\s*\\\")(?P<level>debug|info|warn|error)` | level=~\"debug\""},{"selected":false,"text":"info","value":" | regexp `(?:level=|\\\"level\\\"\\s*:\\s*\\\")(?P<level>debug|info|warn|error)` | level=~\"info\""},{"selected":false,"text":"warn","value":" | regexp `(?:level=|\\\"level\\\"\\s*:\\s*\\\")(?P<level>debug|info|warn|error)` | level=~\"warn\""},{"selected":false,"text":"error","value":" | regexp `(?:level=|\\\"level\\\"\\s*:\\s*\\\")(?P<level>debug|info|warn|error)` | level=~\"error\""}],"query":" | line_format \"{{__line__}}\" : All,  | regexp `(?:level=|\\\"level\\\"\\s*:\\s*\\\")(?P<level>debug|info|warn|error)` | level=~\"debug\" : debug,  | regexp `(?:level=|\\\"level\\\"\\s*:\\s*\\\")(?P<level>debug|info|warn|error)` | level=~\"info\" : info,  | regexp `(?:level=|\\\"level\\\"\\s*:\\s*\\\")(?P<level>debug|info|warn|error)` | level=~\"warn\" : warn,  | regexp `(?:level=|\\\"level\\\"\\s*:\\s*\\\")(?P<level>debug|info|warn|error)` | level=~\"error\" : error","skipUrlSync":false,"type":"custom"},{"allValue":".+","current":{"selected":true,"text":"All","value":"$__all"},"datasource":{"type":"loki","uid":"${DS_LOKI}"},"definition":"label_values({job=~\"kubernetes-pods|journal\"}, namespace)","hide":0,"includeAll":true,"label":"Namespace","multi":true,"name":"namespace","options":[],"query":"label_values({job=~\"kubernetes-pods|journal\"}, namespace)","refresh":2,"regex":"","skipUrlSync":false,"sort":1,"type":"query"},{"allValue":".+","current":{"selected":true,"text":"All","value":"$__all"},"datasource":{"type":"loki","uid":"${DS_LOKI}"},"definition":"label_values({job=~\"kubernetes-pods|journal\"}, node)","hide":0,"includeAll":true,"label":"Node","multi":true,"name":"node","options":[],"query":"label_values({job=~\"kubernetes-pods|journal\"}, node)","refresh":2,"regex":"","skipUrlSync":false,"sort":1,"type":"query"},{"allValue":".+","current":{"selected":true,"text":"All","value":"$__all"},"datasource":{"type":"loki","uid":"${DS_LOKI}"},"definition":"label_values({job=~\"kubernetes-pods|journal\"}, pod)","hide":0,"includeAll":true,"label":"Pod","multi":true,"name":"pod","options":[],"query":"label_values({job=~\"kubernetes-pods|journal\"}, pod)","refresh":2,"regex":"","skipUrlSync":false,"sort":1,"type":"query"}]},"time":{"from":"now-1h","to":"now"},"timepicker":{},"timezone":"browser","title":"Cluster Logs (Loki)","uid":"cluster-logs-loki","version":2,"weekStart":""}
+    {"annotations":{"list":[]},"editable":true,"fiscalYearStartMonth":0,"graphTooltip":0,"id":null,"links":[],"panels":[{"datasource":{"type":"loki","uid":"${DS_LOKI}"},"gridPos":{"h":20,"w":24,"x":0,"y":0},"id":1,"options":{"dedupStrategy":"none","enableLogDetails":true,"prettifyLogMessage":true,"showCommonLabels":false,"showLabels":false,"showTime":true,"sortOrder":"Descending","wrapLogMessage":true},"targets":[{"datasource":{"type":"loki","uid":"${DS_LOKI}"},"editorMode":"code","expr":"{job=~\"kubernetes-pods|journal\", namespace=~\"$namespace\", node=~\"$node\", pod=~\"$pod\"}${severity_pipeline:raw}","queryType":"range","refId":"A"}],"description":"Текст поруч з часом — вміст повідомлення. Фільтр Severity додає LogQL pipeline до запиту.","title":"Logs (content)","type":"logs"}],"refresh":"30s","schemaVersion":38,"style":"dark","tags":["loki","logs","cluster","promtail"],"templating":{"list":[{"current":{"selected":true,"text":"Loki","value":"loki"},"hide":0,"includeAll":false,"label":"Datasource","multi":false,"name":"DS_LOKI","options":[],"query":"loki","refresh":1,"regex":"","skipUrlSync":false,"type":"datasource"},{"current":{"selected":true,"text":"All","value":" | line_format \"{{__line__}}\""},"hide":0,"includeAll":false,"label":"Severity","multi":false,"name":"severity_pipeline","options":[{"selected":true,"text":"All","value":" | line_format \"{{__line__}}\""},{"selected":false,"text":"debug","value":" | regexp `(?:level=|\\\"level\\\"\\s*\\x3A\\s*\\\")(?P<level>debug|info|warn|error)` | level=~\"debug\""},{"selected":false,"text":"info","value":" | regexp `(?:level=|\\\"level\\\"\\s*\\x3A\\s*\\\")(?P<level>debug|info|warn|error)` | level=~\"info\""},{"selected":false,"text":"warn","value":" | regexp `(?:level=|\\\"level\\\"\\s*\\x3A\\s*\\\")(?P<level>debug|info|warn|error)` | level=~\"warn\""},{"selected":false,"text":"error","value":" | regexp `(?:level=|\\\"level\\\"\\s*\\x3A\\s*\\\")(?P<level>debug|info|warn|error)` | level=~\"error\""}],"query":"All :  | line_format \"{{__line__}}\", debug :  | regexp `(?:level=|\\\"level\\\"\\s*\\x3A\\s*\\\")(?P<level>debug|info|warn|error)` | level=~\"debug\", info :  | regexp `(?:level=|\\\"level\\\"\\s*\\x3A\\s*\\\")(?P<level>debug|info|warn|error)` | level=~\"info\", warn :  | regexp `(?:level=|\\\"level\\\"\\s*\\x3A\\s*\\\")(?P<level>debug|info|warn|error)` | level=~\"warn\", error :  | regexp `(?:level=|\\\"level\\\"\\s*\\x3A\\s*\\\")(?P<level>debug|info|warn|error)` | level=~\"error\"","skipUrlSync":false,"type":"custom"},{"allValue":".+","current":{"selected":true,"text":"All","value":"$__all"},"datasource":{"type":"loki","uid":"${DS_LOKI}"},"definition":"label_values({job=~\"kubernetes-pods|journal\"}, namespace)","hide":0,"includeAll":true,"label":"Namespace","multi":true,"name":"namespace","options":[],"query":"label_values({job=~\"kubernetes-pods|journal\"}, namespace)","refresh":2,"regex":"","skipUrlSync":false,"sort":1,"type":"query"},{"allValue":".+","current":{"selected":true,"text":"All","value":"$__all"},"datasource":{"type":"loki","uid":"${DS_LOKI}"},"definition":"label_values({job=~\"kubernetes-pods|journal\"}, node)","hide":0,"includeAll":true,"label":"Node","multi":true,"name":"node","options":[],"query":"label_values({job=~\"kubernetes-pods|journal\"}, node)","refresh":2,"regex":"","skipUrlSync":false,"sort":1,"type":"query"},{"allValue":".+","current":{"selected":true,"text":"All","value":"$__all"},"datasource":{"type":"loki","uid":"${DS_LOKI}"},"definition":"label_values({job=~\"kubernetes-pods|journal\"}, pod)","hide":0,"includeAll":true,"label":"Pod","multi":true,"name":"pod","options":[],"query":"label_values({job=~\"kubernetes-pods|journal\"}, pod)","refresh":2,"regex":"","skipUrlSync":false,"sort":1,"type":"query"}]},"time":{"from":"now-1h","to":"now"},"timepicker":{},"timezone":"browser","title":"Cluster Logs (Loki)","uid":"cluster-logs-loki","version":2,"weekStart":""}
 
   victron-inverter.json: |
     {"annotations":{"list":[{"builtIn":1,"datasource":{"type":"grafana","uid":"-- Grafana --"},"enable":true,"hide":true,"iconColor":"rgba(0, 211, 255, 1)","name":"Annotations & Alerts","type":"dashboard"}]},"editable":true,"fiscalYearStartMonth":0,"graphTooltip":0,"id":null,"links":[],"panels":[{"datasource":{"type":"prometheus","uid":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[],"unit":"volt"},"overrides":[]},"gridPos":{"h":4,"w":4,"x":0,"y":0},"id":1,"options":{"colorMode":"value","graphMode":"none","justifyMode":"auto","orientation":"auto","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"textMode":"value"},"targets":[{"datasource":{"type":"prometheus","uid":"prometheus"},"expr":"victron_battery_voltage","refId":"A"}],"title":"Battery voltage (V)","type":"stat"},{"datasource":{"type":"prometheus","uid":"prometheus"},"fieldConfig":{"defaults":{"unit":"amp"},"overrides":[]},"gridPos":{"h":4,"w":4,"x":4,"y":0},"id":2,"options":{"colorMode":"value","graphMode":"none","justifyMode":"auto","orientation":"auto","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"textMode":"value"},"targets":[{"expr":"victron_battery_current","refId":"A"}],"title":"Battery current (A)","type":"stat"},{"datasource":{"type":"prometheus","uid":"prometheus"},"fieldConfig":{"defaults":{"unit":"percent"},"overrides":[]},"gridPos":{"h":4,"w":4,"x":8,"y":0},"id":3,"options":{"colorMode":"value","graphMode":"none","justifyMode":"auto","orientation":"auto","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"textMode":"value"},"targets":[{"expr":"victron_soc","refId":"A"}],"title":"SOC (%)","type":"stat"},{"datasource":{"type":"prometheus","uid":"prometheus"},"fieldConfig":{"defaults":{"unit":"celsius"},"overrides":[]},"gridPos":{"h":4,"w":4,"x":12,"y":0},"id":4,"options":{"colorMode":"value","graphMode":"none","justifyMode":"auto","orientation":"auto","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"textMode":"value"},"targets":[{"expr":"victron_battery_temperature","refId":"A"}],"title":"Battery temp (°C)","type":"stat"},{"datasource":{"type":"prometheus","uid":"prometheus"},"fieldConfig":{"defaults":{"unit":"watt"},"overrides":[]},"gridPos":{"h":4,"w":6,"x":0,"y":4},"id":5,"options":{"colorMode":"value","graphMode":"none","justifyMode":"auto","orientation":"auto","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"textMode":"value"},"targets":[{"expr":"victron_ac_in_power","refId":"A"}],"title":"AC in power (W)","type":"stat"},{"datasource":{"type":"prometheus","uid":"prometheus"},"fieldConfig":{"defaults":{"unit":"watt"},"overrides":[]},"gridPos":{"h":4,"w":6,"x":6,"y":4},"id":6,"options":{"colorMode":"value","graphMode":"none","justifyMode":"auto","orientation":"auto","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"textMode":"value"},"targets":[{"expr":"victron_ac_out_power","refId":"A"}],"title":"AC out power (W)","type":"stat"},{"datasource":{"type":"prometheus","uid":"prometheus"},"fieldConfig":{"defaults":{"unit":"volt"},"overrides":[]},"gridPos":{"h":4,"w":6,"x":12,"y":4},"id":7,"options":{"colorMode":"value","graphMode":"none","justifyMode":"auto","orientation":"auto","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"textMode":"value"},"targets":[{"expr":"victron_ac_in_voltage","refId":"A"}],"title":"AC in voltage (V)","type":"stat"},{"datasource":{"type":"prometheus","uid":"prometheus"},"fieldConfig":{"defaults":{},"overrides":[]},"gridPos":{"h":4,"w":6,"x":18,"y":4},"id":8,"options":{"colorMode":"value","graphMode":"none","justifyMode":"auto","orientation":"auto","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"textMode":"value"},"targets":[{"expr":"victron_error","refId":"A"}],"title":"Error code","type":"stat"},{"datasource":{"type":"prometheus","uid":"prometheus"},"fieldConfig":{"defaults":{"unit":"volt"},"overrides":[]},"gridPos":{"h":6,"w":12,"x":0,"y":8},"id":9,"options":{"legend":{"calcs":["lastNotNull"],"displayMode":"list","placement":"bottom","showLegend":true},"tooltip":{"mode":"single","sort":"none"}},"targets":[{"expr":"victron_battery_voltage","legendFormat":"Battery V","refId":"A"}],"title":"Battery voltage","type":"timeseries"},{"datasource":{"type":"prometheus","uid":"prometheus"},"fieldConfig":{"defaults":{"unit":"amp"},"overrides":[]},"gridPos":{"h":6,"w":12,"x":12,"y":8},"id":10,"options":{"legend":{"calcs":["lastNotNull"],"displayMode":"list","placement":"bottom","showLegend":true},"tooltip":{"mode":"single","sort":"none"}},"targets":[{"expr":"victron_battery_current","legendFormat":"Battery A","refId":"A"}],"title":"Battery current","type":"timeseries"},{"datasource":{"type":"prometheus","uid":"prometheus"},"fieldConfig":{"defaults":{"unit":"watt"},"overrides":[]},"gridPos":{"h":6,"w":12,"x":0,"y":14},"id":11,"options":{"legend":{"calcs":["lastNotNull"],"displayMode":"list","placement":"bottom","showLegend":true},"tooltip":{"mode":"single","sort":"none"}},"targets":[{"expr":"victron_ac_in_power","legendFormat":"AC in","refId":"A"},{"expr":"victron_ac_out_power","legendFormat":"AC out","refId":"B"}],"title":"AC power (W)","type":"timeseries"},{"datasource":{"type":"prometheus","uid":"prometheus"},"fieldConfig":{"defaults":{"unit":"percent"},"overrides":[]},"gridPos":{"h":6,"w":12,"x":12,"y":14},"id":12,"options":{"legend":{"calcs":["lastNotNull"],"displayMode":"list","placement":"bottom","showLegend":true},"tooltip":{"mode":"single","sort":"none"}},"targets":[{"expr":"victron_soc","legendFormat":"SOC %","refId":"A"}],"title":"State of charge","type":"timeseries"}],"refresh":"60s","schemaVersion":38,"style":"dark","tags":["victron","inverter","ble"],"templating":{"list":[]},"time":{"from":"now-6h","to":"now"},"timepicker":{},"timezone":"browser","title":"Victron MultiPlus (BLE)","uid":"victron-inverter","version":1,"weekStart":""}
+
+---
+# SNMP-дашборди — папка SNMP у Grafana
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards-snmp
+  namespace: monitoring
+  labels:
+    app: grafana
+data:
+  snmp-routers.json: |
+    {"annotations":{"list":[{"builtIn":1,"datasource":{"type":"grafana","uid":"-- Grafana --"},"enable":true,"hide":true,"iconColor":"rgba(0, 211, 255, 1)","name":"Annotations & Alerts","type":"dashboard"}]},"editable":true,"fiscalYearStartMonth":0,"graphTooltip":0,"id":null,"links":[],"panels":[{"datasource":{"type":"prometheus","uid":"${DS_PROMETHEUS}"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[{"options":{"0":{"text":"DOWN"},"1":{"text":"UP"}},"type":"value"}],"thresholds":{"mode":"absolute","steps":[{"color":"red","value":null},{"color":"green","value":1}]},"unit":"none"},"overrides":[]},"gridPos":{"h":5,"w":8,"x":0,"y":0},"id":1,"options":{"colorMode":"value","graphMode":"none","justifyMode":"auto","orientation":"auto","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"textMode":"value"},"pluginVersion":"10.2.2","targets":[{"editorMode":"code","expr":"up{job=\"snmp-routers\", router_name=~\"$router\"}","legendFormat":"{{router_name}} ({{instance}})","range":true,"refId":"A"}],"repeat":"router","repeatDirection":"h","title":"Router availability (UP/DOWN)","type":"stat"},{"datasource":{"type":"prometheus","uid":"${DS_PROMETHEUS}"},"fieldConfig":{"defaults":{"unit":"h"},"overrides":[]},"gridPos":{"h":5,"w":8,"x":8,"y":0},"id":2,"options":{"colorMode":"value","graphMode":"none","justifyMode":"auto","orientation":"auto","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"textMode":"value"},"pluginVersion":"10.2.2","targets":[{"editorMode":"code","expr":"sysUpTime{job=\"snmp-routers\", router_name=~\"$router\"} / 360000","legendFormat":"{{router_name}}","range":true,"refId":"A"}],"repeat":"router","repeatDirection":"h","title":"Uptime (hours)","type":"stat"},{"datasource":{"type":"prometheus","uid":"${DS_PROMETHEUS}"},"fieldConfig":{"defaults":{"unit":"bps"},"overrides":[]},"gridPos":{"h":5,"w":8,"x":16,"y":0},"id":3,"options":{"legend":{"calcs":["lastNotNull"],"displayMode":"table","placement":"right","showLegend":true},"tooltip":{"mode":"single","sort":"none"}},"pluginVersion":"10.2.2","targets":[{"editorMode":"code","expr":"topk(10, rate(ifHCInOctets{job=\"snmp-routers\", router_name=~\"$router\"}[5m]) * 8) * on(instance, ifIndex) group_left(ifDescr) ifDescr{job=\"snmp-routers\", router_name=~\"$router\"}","legendFormat":"in {{ifDescr}}","range":true,"refId":"A"},{"editorMode":"code","expr":"topk(10, rate(ifHCOutOctets{job=\"snmp-routers\", router_name=~\"$router\"}[5m]) * 8) * on(instance, ifIndex) group_left(ifDescr) ifDescr{job=\"snmp-routers\", router_name=~\"$router\"}","legendFormat":"out {{ifDescr}}","range":true,"refId":"B"}],"repeat":"router","repeatDirection":"h","title":"Top interface traffic (bps) — ifHC* counters","type":"timeseries"},{"datasource":{"type":"prometheus","uid":"${DS_PROMETHEUS}"},"fieldConfig":{"defaults":{"unit":"ops"},"overrides":[]},"gridPos":{"h":8,"w":12,"x":0,"y":5},"id":4,"options":{"legend":{"calcs":["lastNotNull"],"displayMode":"table","placement":"right","showLegend":true},"tooltip":{"mode":"single","sort":"none"}},"pluginVersion":"10.2.2","targets":[{"editorMode":"code","expr":"topk(10, rate(ifInErrors{job=\"snmp-routers\", router_name=~\"$router\"}[5m])) * on(instance, ifIndex) group_left(ifDescr) ifDescr{job=\"snmp-routers\", router_name=~\"$router\"}","legendFormat":"inErrors {{ifDescr}}","range":true,"refId":"A"},{"editorMode":"code","expr":"topk(10, rate(ifOutErrors{job=\"snmp-routers\", router_name=~\"$router\"}[5m])) * on(instance, ifIndex) group_left(ifDescr) ifDescr{job=\"snmp-routers\", router_name=~\"$router\"}","legendFormat":"outErrors {{ifDescr}}","range":true,"refId":"B"}],"repeat":"router","repeatDirection":"h","title":"Top interface errors (per second)","type":"timeseries"},{"datasource":{"type":"prometheus","uid":"${DS_PROMETHEUS}"},"fieldConfig":{"defaults":{"unit":"none"},"overrides":[]},"gridPos":{"h":8,"w":12,"x":12,"y":5},"id":5,"options":{"legend":{"calcs":["lastNotNull"],"displayMode":"table","placement":"right","showLegend":true},"tooltip":{"mode":"single","sort":"none"}},"pluginVersion":"10.2.2","targets":[{"editorMode":"code","expr":"ifOperStatus{job=\"snmp-routers\", router_name=~\"$router\"} * on(instance, ifIndex) group_left(ifDescr) ifDescr{job=\"snmp-routers\", router_name=~\"$router\"}","legendFormat":"{{ifDescr}} operStatus","range":true,"refId":"A"}],"repeat":"router","repeatDirection":"h","title":"Interface oper status (1=up, 2=down)","type":"timeseries"}],"refresh":"30s","schemaVersion":38,"style":"dark","tags":["snmp","routers","unifi","edgerouter"],"templating":{"list":[{"current":{"selected":false,"text":"Prometheus","value":"Prometheus"},"hide":0,"includeAll":false,"label":"Datasource","multi":false,"name":"DS_PROMETHEUS","options":[],"query":"prometheus","refresh":1,"regex":"","skipUrlSync":false,"type":"datasource"},{"current":{"selected":false,"text":"vrn625 + syhiv17","value":["vrn625","syhiv17"]},"datasource":{"type":"prometheus","uid":"${DS_PROMETHEUS}"},"definition":"label_values(up{job=\"snmp-routers\"}, router_name)","hide":0,"includeAll":false,"label":"Routers","multi":true,"name":"router","options":[],"query":{"query":"label_values(up{job=\"snmp-routers\"}, router_name)","refId":"PrometheusVariableQueryEditor-VariableQuery"},"refresh":2,"regex":"","skipUrlSync":false,"sort":1,"type":"query"}]},"time":{"from":"now-6h","to":"now"},"timepicker":{},"timezone":"browser","title":"SNMP Routers (vrn625 / syhiv17)","uid":"snmp-routers","version":1,"weekStart":""}

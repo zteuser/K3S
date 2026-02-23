@@ -31,6 +31,7 @@ resources:
   # Grafana
   - grafana/configmap.yaml
   - grafana/configmap-datasources.yaml
+  - grafana/configmap-dashboards.yaml
   - grafana/secret.yaml
   - grafana/pvc.yaml
   - grafana/deployment.yaml
@@ -48,12 +49,20 @@ resources:
   - loki/service.yaml
 
   # Promtail (збір логів подів + journal) — DaemonSet на кожній ноді
-  - promtail/serviceaccount.yaml
-  - promtail/clusterrole.yaml
-  - promtail/clusterrolebinding.yaml
-  - promtail/configmap.yaml
-  - promtail/daemonset.yaml
-  - promtail/service.yaml
+  #- promtail/serviceaccount.yaml
+  #- promtail/clusterrole.yaml
+  #- promtail/clusterrolebinding.yaml
+  #- promtail/configmap.yaml
+  #- promtail/daemonset.yaml
+  #- promtail/service.yaml
+
+  # Alloy (заміна Promtail для логів у Loki; можна деплоїти поруч для тесту, потім вимкнути Promtail)
+  - alloy/serviceaccount.yaml
+  - alloy/clusterrole.yaml
+  - alloy/clusterrolebinding.yaml
+  - alloy/configmap.yaml
+  - alloy/daemonset.yaml
+  - alloy/service.yaml
 
 # Не використовуємо commonLabels: вони додають мітки до spec.selector у Deployment/DaemonSet,
 # а selector незмінний після створення — apply падає з "field is immutable" на вже створених ресурсах.

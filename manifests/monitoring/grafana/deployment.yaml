@@ -83,6 +83,8 @@ spec:
           mountPath: /etc/grafana/provisioning/dashboards
         - name: grafana-dashboards-json
           mountPath: /etc/grafana/provisioning/dashboards-json
+        - name: grafana-dashboards-snmp
+          mountPath: /etc/grafana/provisioning/dashboards-snmp
         - name: grafana-storage
           mountPath: /var/lib/grafana
         securityContext:
@@ -128,6 +130,9 @@ spec:
       - name: grafana-dashboards-json
         configMap:
           name: grafana-dashboards-json
+      - name: grafana-dashboards-snmp
+        configMap:
+          name: grafana-dashboards-snmp
       - name: grafana-storage
         persistentVolumeClaim:
           claimName: grafana-data
