@@ -1,0 +1,37 @@
+# Максимально дозвольна політика для DNS агента — усуває "lookup s-portainer-agent-headless i/o timeout".
+# Агент має надсилати DNS на 10.96.0.10 і приймати відповіді з будь-якої адреси (CoreDNS pod IP).
+# Застосувати: kubectl apply -f manifests/portainer-agent/networkpolicy-allow-agent-dns-permissive.yaml
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-agent-dns-egress-any
+  namespace: portainer-agent
+spec:
+  endpointSelector:
+    matchLabels:
+      app: portainer-agent
+  egress:
+    # DNS: egress до будь-якої адреси на порт 53 (CoreDNS та pod IP)
+    - toCIDR:
+        - 0.0.0.0/0
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-agent-dns-ingress-any
+  namespace: portainer-agent
+spec:
+  endpointSelector:
+    matchLabels:
+      app: portainer-agent
+  ingress:
+    # DNS-відповіді: приймати з будь-якої адреси (на ефемерний порт)
+    - fromCIDR:
+        - 0.0.0.0/0

@@ -19,6 +19,8 @@ spec:
   
   # ВАРІАНТ 3: Створити новий PVC без volumeName (якщо storage class підтримує)
   # За замовчуванням - створюємо новий PVC на тому ж storage class
+  # volumeName: ім'я PV після binding — додати для існуючих PVC, щоб apply не ламав spec
+  volumeName: pv-grafana-data
   accessModes:
     - ReadWriteMany  # OCFS2 підтримує ReadWriteMany (RWX) - має співпадати з PV
   resources:

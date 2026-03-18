@@ -3,13 +3,9 @@ kind: Ingress
 metadata:
   name: grafana
   namespace: monitoring
-  annotations:
-    # k3s Traefik інколи дивиться тільки на annotation class (а не ingressClassName),
-    # тому залишаємо обидва механізми + явно задаємо правило і entrypoint.
-    kubernetes.io/ingress.class: traefik
-    traefik.ingress.kubernetes.io/router.entrypoints: web
+  annotations: {}
 spec:
-  ingressClassName: traefik
+  ingressClassName: cilium
   rules:
   - host: monitoring.lan
     http:

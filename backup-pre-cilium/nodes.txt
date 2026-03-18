@@ -1,0 +1,8 @@
+# Знімок стану нод перед міграцією на Cilium
+# Дата: 2025-03-07
+
+NAME          STATUS   ROLES                       AGE    VERSION        INTERNAL-IP    EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION      CONTAINER-RUNTIME
+beelinkeqr5   Ready    control-plane,etcd,master   34d    v1.34.3+k3s1   192.168.1.19   <none>        Ubuntu 24.04.4 LTS   6.8.0-100-generic   containerd://2.1.5-k3s1
+macmini7      Ready    control-plane,etcd,master   170d   v1.34.3+k3s1   192.168.2.19   <none>        Ubuntu 24.04.4 LTS   6.17.0-14-generic   containerd://2.1.5-k3s1
+master-node   Ready    control-plane,etcd,master   34d    v1.34.3+k3s1   10.0.10.10     <none>        Ubuntu 22.04.5 LTS   6.8.0-1043-oracle   containerd://2.1.5-k3s1
+work-node     Ready    worker                      170d   v1.34.3+k3s1   10.0.10.20     <none>        Ubuntu 22.04.5 LTS   6.8.0-1043-oracle   containerd://2.1.5-k3s1

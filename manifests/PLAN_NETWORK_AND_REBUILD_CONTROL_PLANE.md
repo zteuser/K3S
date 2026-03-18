@@ -137,3 +137,9 @@ tls-san: 192.168.100.2
 ## 9. Посилання на діаграму
 
 Мережева топологія та призначення адрес 192.168.100.x, 10.0.10.x, локації VRN625/Syhiv17/OCI — згідно з **Syhiv VPN-2.pdf**. Фінальна діаграма OSPF Area 0 та стану сусідів (master, worker, VRN625, Syhiv17) — **Syhiv OSPF.pdf** (у корені репозиторію).
+
+---
+
+## 10. Пов’язані документи
+
+- **CILIUM_MIGRATION_PLAN.md** — план міграції CNI з Flannel на Cilium (eBPF, Hubble, Gateway API).

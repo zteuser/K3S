@@ -1,0 +1,9 @@
+# Інформація про кластер перед міграцією на Cilium
+# Дата: 2025-03-07
+
+kubectl version:
+Client Version: v1.35.0
+Kustomize Version: v5.7.1
+Server Version: v1.34.3+k3s1
+
+API Server: https://192.168.2.19:6443

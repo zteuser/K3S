@@ -1,0 +1,8 @@
+# Override для тестування: вимкнути BPF masquerade (гіпотеза втрати connectivity)
+# Використання: helm upgrade -f values-k3s.yaml -f values-k3s-no-bpf-masquerade.yaml ...
+#
+# bpf.masquerade: true → auto-enables BPF Host Routing, що може ламати response packets
+# (cilium/cilium#39806). iptables-based masquerade не використовує host routing.
+---
+bpf:
+  masquerade: false

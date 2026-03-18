@@ -9,6 +9,8 @@ rules:
   resources:
   - nodes
   - nodes/proxy
+  - nodes/metrics   # kubelet :10250/metrics — без цього 403 Forbidden
+  - nodes/stats     # kubelet /stats/summary (metrics-server)
   - services
   - endpoints
   - pods

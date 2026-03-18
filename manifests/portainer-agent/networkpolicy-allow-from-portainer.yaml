@@ -1,0 +1,83 @@
+# CiliumNetworkPolicy для namespace portainer-agent.
+# Ingress від Portainer Server (portainer), egress агента (DNS, зворотний трафік до Portainer).
+# Застосовувати окремо: kubectl apply -f manifests/portainer-agent/networkpolicy-allow-from-portainer.yaml
+# (не через kustomize portainer/, щоб не перезаписати namespace).
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-portainer-server-to-agent
+  namespace: portainer-agent
+spec:
+  endpointSelector:
+    matchLabels:
+      app: portainer-agent
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: portainer
+            app: portainer
+      toPorts:
+        - ports:
+            - port: "9001"
+              protocol: TCP
+    # Same-node: іноді трафік може йти через host; дозволити з хоста на 9001.
+    - fromEntities:
+        - host
+      toPorts:
+        - ports:
+            - port: "9001"
+              protocol: TCP
+    # DNS-відповіді від CoreDNS (агент робить lookup s-portainer-agent-headless) — без toPorts, щоб приймати на ефемерний порт.
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+    # Відповіді DNS з pod CIDR (CoreDNS відповідає з pod IP, не ClusterIP) — надійніше при i/o timeout.
+    - fromCIDR:
+        - 10.244.0.0/16
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-portainer-agent-egress-dns
+  namespace: portainer-agent
+spec:
+  endpointSelector:
+    matchLabels:
+      app: portainer-agent
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+    # Явний egress до ClusterIP kube-dns — toEndpoints не завжди матчить трафік до 10.96.0.10.
+    - toCIDR:
+        - 10.96.0.10/32
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+---
+# Egress з агента до Portainer Server — відповіді на /ping та інші запити (без цього з’єднання може давати "operation not permitted").
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-portainer-agent-egress-to-portainer
+  namespace: portainer-agent
+spec:
+  endpointSelector:
+    matchLabels:
+      app: portainer-agent
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: portainer
+            app: portainer

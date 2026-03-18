@@ -1,6 +1,13 @@
 .cursor/
 *.local
 
+# Python venv для генерації діаграм
+manifests/cilium/.venv/
+
 # Grafana pod/container logs (exported from Portainer/kubectl)
 grafana*log
 grafana*_logs*
+
+# Бекап перед міграцією (може містити secrets)
+backup-pre-cilium/*.yaml
+backup-pre-cilium/node-*.txt

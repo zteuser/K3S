@@ -1,0 +1,136 @@
+# Cilium Helm values для k3s
+# Підставити k8sServiceHost перед встановленням!
+#
+# Використання:
+#   helm install cilium cilium/cilium --version 1.19.0 -n kube-system -f values-k3s.yaml
+
+version: "1.19.0"
+
+# Kubernetes API Server (master-node в OCI — надійніший, в хмарі)
+k8sServiceHost: "10.0.10.10"
+k8sServicePort: 6443
+
+# Заміна kube-proxy на Cilium eBPF
+kubeProxyReplacement: true
+nodeinit:
+  enabled: false
+
+# IPv4
+ipv4:
+  enabled: true
+ipv6:
+  enabled: false
+
+# Hubble Observability
+hubble:
+  enabled: true
+  tls:
+    enabled: false
+  peerService:
+    clusterDomain: cluster.local
+    targetPort: 4244
+  relay:
+    enabled: true
+    # Workaround: schedule on work-node so DNS (CoreDNS) is reachable (same-node or working path).
+    nodeSelector:
+      kubernetes.io/hostname: work-node
+    prometheus:
+      enabled: true   # Метрики для дашборду Hubble (порт 9965)
+    dialTimeout: "5s"
+    retryTimeout: "10s"
+    tls:
+      server:
+        enabled: false
+      client:
+        enabled: false
+  ui:
+    enabled: true
+    frontend:
+      server:
+        ipv6:
+          enabled: false
+  metrics:
+    enableOpenMetrics: true
+    enabled:
+      - dns
+      - drop
+      - tcp
+      - flow
+      - port-distribution
+      - icmp
+      - http
+
+# IPAM — kubernetes mode використовує cluster CIDR з API (k3s: 10.42.0.0/16)
+ipam:
+  mode: kubernetes
+
+# Native Routing (без тунелів) — підходить для WireGuard/OSPF топології
+routingMode: native
+tunnelProtocol: ""
+ipv4NativeRoutingCIDR: 10.42.0.0/16
+enableIPv4Masquerade: true
+autoDirectNodeRoutes: true
+
+# Мережеві інтерфейси (з backup: macmini7=enp3s0f0, beelinkeqr5=enp1s0, master/work-node=enp0s6)
+# Явно вказати devices та directRoutingDevice — Cilium не завжди визначає автоматично
+devices: "enp0s6"
+directRoutingDevice: "enp0s6"
+
+# L2 Announcements — для LB-IPAM (опційно, після базової міграції)
+l2announcements:
+  enabled: false
+l2podAnnouncements:
+  enabled: false
+
+# K8s client rate limit
+k8sClientRateLimit:
+  qps: 50
+  burst: 100
+
+# External IPs
+externalIPs:
+  enabled: true
+
+# Load balancer
+loadBalancer:
+  acceleration: disabled
+  mode: hybrid
+
+# Host Firewall (вимкнено для Hubble)
+hostFirewall:
+  enabled: false
+
+# Socket-level LB
+socketLB:
+  enabled: true
+
+# Gateway API (опційно, для майбутньої міграції з Traefik)
+gatewayAPI:
+  enabled: true
+  hostNetwork:
+    enabled: false
+l7Proxy: true
+
+# BPF
+bpf:
+  masquerade: true
+  mapDynamicSizeRatio: 0.003
+
+# IP Masquerade Agent — nonMasquerade для cluster-internal мереж
+# k3s: Pod 10.42, Service 10.43, Node мережі (192.168.1, 192.168.2, 10.0.10)
+ipMasqAgent:
+  enabled: true
+  config:
+    nonMasqueradeCIDRs:
+      - 10.42.0.0/16   # Pod network (k3s)
+      - 10.43.0.0/16   # Service network (k3s)
+      - 192.168.1.0/24 # beelinkeqr5 (Syhiv17)
+      - 192.168.2.0/24 # macmini7 (VRN625)
+      - 10.0.10.0/24   # master-node, work-node (OCI Amper)
+
+# Prometheus metrics
+prometheus:
+  enabled: true
+  operator:
+    prometheus:
+      enabled: true

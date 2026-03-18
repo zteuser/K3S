@@ -1,0 +1,42 @@
+# Дозволити подам у namespace portainer робити DNS-запити до CoreDNS і отримувати відповіді.
+# Потрібно, якщо в кластері Cilium default-deny: без цих політик резолв дає "Resolving timed out".
+# Застосувати: kubectl apply -f manifests/portainer/networkpolicy-allow-dns-from-portainer.yaml
+#
+# 1) Ingress до CoreDNS — приймати DNS (53) від будь-яких подів у namespace portainer
+# 2) Egress з CoreDNS — дозволити відправляти DNS-відповіді назад у namespace portainer
+# Якщо CoreDNS має інші лейбли, змініть endpointSelector (k8s-app: kube-dns).
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-dns-from-portainer
+  namespace: kube-system
+spec:
+  endpointSelector:
+    matchLabels:
+      k8s-app: kube-dns
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: portainer
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+---
+# Egress з CoreDNS: відповідь йде на ефемерний порт клієнта, тому не обмежуємо toPorts.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-coredns-egress-to-portainer
+  namespace: kube-system
+spec:
+  endpointSelector:
+    matchLabels:
+      k8s-app: kube-dns
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: portainer

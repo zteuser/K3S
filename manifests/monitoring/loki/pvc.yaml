@@ -6,6 +6,7 @@ metadata:
   labels:
     app: loki
 spec:
+  volumeName: pv-loki-10gi  # для існуючого bound PVC — apply не змінює spec
   accessModes:
     - ReadWriteMany  # OCFS2 підтримує ReadWriteMany (RWX)
   resources:

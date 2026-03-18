@@ -1,0 +1,54 @@
+# Дозволити подам у namespace portainer-agent робити DNS-запити до CoreDNS і отримувати відповіді.
+# Без цього агент падає: "lookup s-portainer-agent-headless on 10.96.0.10:53: i/o timeout".
+# Застосувати: kubectl apply -f manifests/portainer-agent/networkpolicy-allow-dns-from-agent.yaml
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-dns-from-portainer-agent
+  namespace: kube-system
+spec:
+  endpointSelector:
+    matchLabels:
+      k8s-app: kube-dns
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: portainer-agent
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+    # Якщо агент з hostNetwork: true — DNS-запити йдуть з хоста (ноди).
+    - fromEntities:
+        - host
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-coredns-egress-to-portainer-agent
+  namespace: kube-system
+spec:
+  endpointSelector:
+    matchLabels:
+      k8s-app: kube-dns
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: portainer-agent
+    # Відповіді DNS йдуть на pod IP агента (10.244.x.x); toCIDR гарантує доставку.
+    - toCIDR:
+        - 10.244.0.0/16
+    # Якщо агент з hostNetwork — відповідь йде на IP ноди (напр. master-node 10.0.10.10).
+    - toEntities:
+        - host
+    - toCIDR:
+        - 10.0.10.0/24

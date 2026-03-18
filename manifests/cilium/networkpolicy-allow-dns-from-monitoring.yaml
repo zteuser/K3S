@@ -1,0 +1,36 @@
+# Дозволити подам у monitoring (Prometheus, Grafana, Alloy тощо) робити DNS-запити до CoreDNS.
+# Інакше alloy.monitoring.svc.cluster.local не резолвиться → context deadline exceeded при скрейпі.
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-dns-from-monitoring
+  namespace: kube-system
+spec:
+  endpointSelector:
+    matchLabels:
+      k8s-app: kube-dns
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: monitoring
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-coredns-egress-to-monitoring
+  namespace: kube-system
+spec:
+  endpointSelector:
+    matchLabels:
+      k8s-app: kube-dns
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: monitoring

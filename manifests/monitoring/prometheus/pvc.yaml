@@ -22,6 +22,7 @@ spec:
   
   # ВАРІАНТ 2: Створити новий PVC на тому ж storage class
   # (якщо не використовуєте volumeName, закоментуйте рядок вище)
+  volumeName: pv-prometheus-data  # для існуючого bound PVC — apply не змінює spec
   accessModes:
     - ReadWriteMany  # OCFS2 підтримує ReadWriteMany (RWX)
   resources:

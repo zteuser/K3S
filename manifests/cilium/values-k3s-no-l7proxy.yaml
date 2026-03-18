@@ -1,0 +1,7 @@
+# Override: вимкнути L7 proxy (гіпотеза втрати host connectivity)
+# Джерело: https://github.com/cilium/cilium/issues/25015
+# L7 proxy додає TPROXY правила для cilium-dns-egress → перехоплює TCP/UDP → втрата мережі
+#
+# Використання: helm install -f values-k3s.yaml -f values-k3s-no-l7proxy.yaml ...
+---
+l7Proxy: false

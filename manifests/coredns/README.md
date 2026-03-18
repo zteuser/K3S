@@ -1,5 +1,11 @@
 # CoreDNS у k3s
 
+## DNS i/o timeout на OCI (169.254.169.254)
+
+Якщо в логах з’являються `[ERROR] plugin/errors: ... i/o timeout` при запитах до `169.254.169.254:53` (OCI VCN resolver), див. **FIX_OCI_DNS_TIMEOUT.md** та скрипт `apply-coredns-oci-dns-fix.sh`.
+
+---
+
 ## Помилки «Failed to watch» / «watch ended with error»
 
 Якщо в логах CoreDNS з’являються `[ERROR] plugin/kubernetes: Failed to watch` та `Plugins not ready: "kubernetes"`, див. покрокову діагностику та виправлення в **FIX_COREDNS_FAILED_TO_WATCH.md**.

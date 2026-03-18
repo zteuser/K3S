@@ -25,6 +25,14 @@ data:
         editable: true
         options:
           path: /etc/grafana/provisioning/dashboards-snmp
+      - name: 'Cilium'
+        orgId: 1
+        folder: 'Cilium'
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /etc/grafana/provisioning/dashboards-cilium
 
 ---
 apiVersion: v1

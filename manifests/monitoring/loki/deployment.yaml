@@ -18,6 +18,10 @@ spec:
         app: loki
     spec:
       dnsPolicy: ClusterFirst
+      tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
       # Планувати на ноді з DNS/API (як у Prometheus)
       nodeSelector:
         kubernetes.io/hostname: master-node
@@ -34,8 +38,9 @@ spec:
         command: ['sh', '-c']
         args:
           - |
+            # Видалити tsdb-shipper кеш/активні — можуть містити файли з неправильними правами (OCFS2)
+            rm -rf /loki/tsdb-shipper-cache /loki/tsdb-shipper-active
             mkdir -p /loki/tsdb-shipper-cache /loki/chunks /loki/rules /loki/compactor
-            rm -rf /loki/tsdb-shipper-active
             mkdir -p /loki/tsdb-shipper-active/scratch /loki/tsdb-shipper-active/uploader
             chown -R 10001:10001 /loki
             chmod -R 775 /loki

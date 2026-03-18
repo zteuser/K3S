@@ -1,0 +1,129 @@
+# Cilium Helm values для k8s (kubeadm)
+# Використання: helm install cilium cilium/cilium -n kube-system -f values-k8s.yaml
+#
+# Ноди: master-node (10.0.10.10), work-node (10.0.10.20), macmini7 (192.168.2.19), beelinkeqr5 (192.168.1.19)
+# Інтерфейси: master/work-node=enp0s6, macmini7=enp3s0f0, beelinkeqr5=enp1s0
+
+version: "1.19.0"
+
+# Kubernetes API Server
+k8sServiceHost: "10.0.10.10"
+k8sServicePort: 6443
+
+# Заміна kube-proxy на Cilium eBPF
+kubeProxyReplacement: true
+nodeinit:
+  enabled: false
+
+# IPv4
+ipv4:
+  enabled: true
+ipv6:
+  enabled: false
+
+# Hubble Observability
+hubble:
+  enabled: true
+  tls:
+    enabled: false
+  peerService:
+    clusterDomain: cluster.local
+    targetPort: 4244
+  relay:
+    enabled: true
+    # Workaround: schedule on work-node so DNS (CoreDNS on work-node) is reachable;
+    # on master-node pod->CoreDNS hits cross-node 10.244.0.x -> 10.244.1.x and can timeout (e.g. OCI Security List).
+    nodeSelector:
+      kubernetes.io/hostname: work-node
+    dialTimeout: "5s"
+    retryTimeout: "10s"
+    tls:
+      server:
+        enabled: false
+      client:
+        enabled: false
+  ui:
+    enabled: true
+    frontend:
+      server:
+        ipv6:
+          enabled: false
+  metrics:
+    enableOpenMetrics: true
+    enabled:
+      - dns
+      - drop
+      - tcp
+      - flow
+      - port-distribution
+      - icmp
+      # http — вимкнено при l7Proxy: false
+
+# IPAM — kubernetes mode (pod CIDR з API)
+ipam:
+  mode: kubernetes
+
+# Native Routing (kubeadm default pod CIDR: 10.244.0.0/16)
+routingMode: native
+tunnelProtocol: ""
+ipv4NativeRoutingCIDR: 10.244.0.0/16
+enableIPv4Masquerade: true
+autoDirectNodeRoutes: true
+
+# master/work-node: enp0s6, macmini7: enp3s0f0, beelinkeqr5: enp1s0
+# Cilium використовує інтерфейси що існують на ноді
+devices: "enp0s6,enp3s0f0,enp1s0"
+# direct-routing-device — per-node через CiliumNode (macmini7=enp3s0f0)
+# direct-routing-skip-unreachable — macmini7 досяжний через WG (gateway 192.168.100.6), не напряму
+extraConfig:
+  direct-routing-device: "enp0s6"
+  direct-routing-skip-unreachable: "true"
+
+l2announcements:
+  enabled: false
+l2podAnnouncements:
+  enabled: false
+
+k8sClientRateLimit:
+  qps: 50
+  burst: 100
+
+externalIPs:
+  enabled: true
+
+loadBalancer:
+  acceleration: disabled
+  mode: hybrid
+
+hostFirewall:
+  enabled: false
+
+socketLB:
+  enabled: true
+
+# l7Proxy: false — якщо була втрата host connectivity на k3s
+# При true — Gateway API, L7 policies, Hubble HTTP
+l7Proxy: false
+gatewayAPI:
+  enabled: false  # потребує l7Proxy
+
+bpf:
+  masquerade: true
+  mapDynamicSizeRatio: 0.003
+
+# nonMasquerade — cluster + node мережі
+ipMasqAgent:
+  enabled: true
+  config:
+    nonMasqueradeCIDRs:
+      - 10.244.0.0/16   # Pod network (kubeadm)
+      - 10.96.0.0/12    # Service network (kubeadm default)
+      - 192.168.1.0/24  # beelinkeqr5
+      - 192.168.2.0/24  # macmini7
+      - 10.0.10.0/24    # OCI (master-node, work-node)
+
+prometheus:
+  enabled: true
+  operator:
+    prometheus:
+      enabled: true

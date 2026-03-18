@@ -1,0 +1,14 @@
+# Headless service з ім'ям s-portainer-agent-headless — агент робить DNS lookup саме цього імені.
+# Без нього: "lookup s-portainer-agent-headless on ...:53: no such host" → Exit Code 1.
+apiVersion: v1
+kind: Service
+metadata:
+  name: s-portainer-agent-headless
+  namespace: portainer-agent
+  labels:
+    app: portainer-agent
+spec:
+  clusterIP: None
+  selector:
+    app: portainer-agent
+  ports: []

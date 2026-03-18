@@ -1,0 +1,9 @@
+# Override: VXLAN замість native routing
+# Pod-трафік інкапсульований — використовує node IP (10.0.10.x), обходить OCI Security List
+# Використання: helm upgrade cilium -f values-k8s.yaml -f values-k8s-vxlan.yaml
+
+tunnelProtocol: "vxlan"
+routingMode: tunnel
+autoDirectNodeRoutes: false
+# Для VXLAN direct-routing-device не потрібен — видалити з extraConfig
+extraConfig: {}

@@ -1,0 +1,32 @@
+# RBAC: дозвіл для ServiceAccount Cilium на ресурси Lease (coordination.k8s.io)
+# Потрібно для L2 Announcements (leader election) — помилка:
+#   "User system:serviceaccount:kube-system:cilium cannot get resource leases in API group coordination.k8s.io"
+# Див. https://github.com/cilium/cilium/issues/31240
+#
+# Застосувати: kubectl apply -f manifests/cilium/rbac-l2-announce-leases.yaml
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cilium-l2-announce-leases
+  labels:
+    app.kubernetes.io/name: cilium
+rules:
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: cilium-l2-announce-leases
+  labels:
+    app.kubernetes.io/name: cilium
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cilium-l2-announce-leases
+subjects:
+  - kind: ServiceAccount
+    name: cilium
+    namespace: kube-system

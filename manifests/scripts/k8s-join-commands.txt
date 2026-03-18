@@ -1,0 +1,16 @@
+# k8s join-команди (master-node 10.0.10.10)
+# Згенеровано: 2026-03-07
+# Token дійсний 24h. Certificate-key — ~2 години.
+
+# --- Worker (work-node, macmini7, beelinkeqr5) ---
+sudo kubeadm join 10.0.10.10:6443 --token 3pki2x.8yfddbsl5ch6ifw4 \
+  --discovery-token-ca-cert-hash sha256:64ad9b8b382a5e306bdcb32ee5e3e7a4bb551ba6d6debff468572f0639040dfc
+
+# --- Control-plane (macmini7, beelinkeqr5 — фаза 2, HA) ---
+sudo kubeadm join 10.0.10.10:6443 --token 3pki2x.8yfddbsl5ch6ifw4 \
+  --discovery-token-ca-cert-hash sha256:64ad9b8b382a5e306bdcb32ee5e3e7a4bb551ba6d6debff468572f0639040dfc \
+  --control-plane --certificate-key e1ea162b619905a51e4faf70600db604906c473b6eac33ddfc1bc0bfccc05019
+
+# Certificate-key дійсний ~2 години. Потім на master-node:
+#   kubeadm init phase upload-certs --upload-certs
+# і використати новий certificate-key у join --control-plane.

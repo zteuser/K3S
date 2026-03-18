@@ -39,7 +39,14 @@ resources:
   # Стандартний Ingress — k3s Traefik за замовчуванням обробляє саме Ingress (не IngressRoute CRD).
   # Якщо monitoring.lan повертає 404, застосуйте цей манифест і перезавантажте Traefik.
   - grafana/ingress.yaml
-  - grafana/ingressroute.yaml
+  # IngressRoute: вимкнено — CRD traefik.io/v1alpha1 не встановлено (Cilium замість Traefik).
+  # - grafana/ingressroute.yaml
+
+  # snmp-exporter (SNMP метрики роутерів) — Prometheus scrape target
+  - snmp-exporter/configmap.yaml
+  - snmp-exporter/secret.yaml
+  - snmp-exporter/deployment.yaml
+  - snmp-exporter/service.yaml
 
   # Loki (логи) — namespace monitoring, окремий volume 10Gi ocfs2-shared
   - loki/persistentvolume.yaml

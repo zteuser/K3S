@@ -1,0 +1,18 @@
+# CoreDNS: один под на ноду + internalTrafficPolicy: Local для kube-dns —
+# DNS трафік лише до локального поду, без cross-node (обхід блокування 10.244.x.x).
+# На нодах без доступу до API (10.96.0.1) под CoreDNS не стане Ready — там DNS не працюватиме.
+# Застосування:
+#   kubectl patch deployment coredns -n kube-system --patch-file=manifests/coredns/coredns-one-per-node-patch.yaml
+#   kubectl patch svc kube-dns -n kube-system -p '{"spec":{"internalTrafficPolicy":"Local"}}'
+#
+spec:
+  replicas: 4
+  template:
+    spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              k8s-app: kube-dns

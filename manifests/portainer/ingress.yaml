@@ -3,12 +3,9 @@ kind: Ingress
 metadata:
   name: portainer
   namespace: portainer
-  annotations:
-    kubernetes.io/ingress.class: traefik
-    # web (80) + websecure (443) — http://portainer.lan і https://portainer.lan
-    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+  annotations: {}
 spec:
-  ingressClassName: traefik
+  ingressClassName: cilium
   rules:
   - host: portainer.lan
     http:
@@ -20,7 +17,3 @@ spec:
             name: portainer
             port:
               number: 9000
-  tls:
-  - hosts:
-    - portainer.lan
-    secretName: portainer-lan-tls

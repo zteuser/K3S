@@ -1,0 +1,15 @@
+# Override для кластера з Pod CIDR 10.244.0.0/16 (замість k3s default 10.42.0.0/16)
+# Використання: helm upgrade cilium -f values-k3s.yaml -f values-k3s-pod-cidr-10-244.yaml
+# Або при install: helm install ... -f values-k3s.yaml -f values-k3s-pod-cidr-10-244.yaml
+
+ipv4NativeRoutingCIDR: "10.244.0.0/16"
+
+ipMasqAgent:
+  enabled: true
+  config:
+    nonMasqueradeCIDRs:
+      - 10.244.0.0/16   # Pod network
+      - 10.244.240.0/20 # Service network (якщо використовується)
+      - 192.168.1.0/24  # beelinkeqr5 (Syhiv17)
+      - 192.168.2.0/24  # macmini7 (VRN625)
+      - 10.0.10.0/24    # master-node, work-node (OCI Amper)

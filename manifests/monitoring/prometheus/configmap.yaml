@@ -19,12 +19,16 @@ data:
         static_configs:
           - targets: ['localhost:9090']
 
+      # API server metrics — через Service (не залежить від ноди; 192.168.2.19:6443 → connection refused)
       - job_name: 'kubernetes-apiservers'
         static_configs:
-          - targets: ['192.168.2.19:6443']
+          - targets: ['kubernetes.default.svc.cluster.local:443']
         scheme: https
+        metrics_path: /metrics
         tls_config:
           ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+          # k3s API cert може бути для apiserver, не kubernetes.default.svc
+          insecure_skip_verify: true
         bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
 
       - job_name: 'kubernetes-nodes'
@@ -72,8 +76,9 @@ data:
         static_configs:
           # Service замість статичної IP пода — target залишається UP після перезапуску пода
           - targets: ['kube-state-metrics.monitoring.svc.cluster.local:8080']
-        scrape_interval: 30s
-        scrape_timeout: 20s
+        metrics_path: /metrics
+        scrape_interval: 60s
+        scrape_timeout: 55s   # має бути <= scrape_interval
 
       # Promtail — метрики для дашборду Grafana 20881 (Promtail Monitoring - Metrics and Logs)
       - job_name: 'promtail'
@@ -98,7 +103,8 @@ data:
         scrape_interval: 30s
         scrape_timeout: 10s
 
-      # Alloy — метрики для дашборду Alloy (порт 12345)
+      # Alloy — по одному таргету на ноду (DaemonSet). Метрики з усіх нод для дашбордів.
+      # Щоб усі таргети були UP — потрібна cross-node доступність (POD_CONNECTIVITY_FIX_10_244.md).
       - job_name: 'alloy'
         kubernetes_sd_configs:
           - role: endpoints
@@ -119,7 +125,7 @@ data:
           - target_label: job
             replacement: alloy
         scrape_interval: 30s
-        scrape_timeout: 10s
+        scrape_timeout: 15s
 
       # SNMP Exporter для моніторингу роутерів
       - job_name: 'snmp-routers'
@@ -173,3 +179,62 @@ data:
               device: 'victron-multiplus'
         scrape_interval: 60s
         scrape_timeout: 25s
+
+      # Cilium — agent (порт 9962 з Cilium 1.14+; для старих версій — 9090), operator, hubble-relay
+      - job_name: 'cilium-agent'
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names: [kube-system]
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_label_k8s_app]
+            action: keep
+            regex: cilium
+          - source_labels: [__meta_kubernetes_pod_container_name]
+            action: keep
+            regex: cilium-agent
+          - source_labels: [__meta_kubernetes_pod_node_name]
+            target_label: node
+          - source_labels: [__meta_kubernetes_pod_ip]
+            regex: (.+)
+            target_label: __address__
+            replacement: $1:9962
+        scrape_interval: 15s
+        scrape_timeout: 10s
+
+      - job_name: 'cilium-operator'
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names: [kube-system]
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_label_io_cilium_app]
+            action: keep
+            regex: operator
+          - source_labels: [__meta_kubernetes_pod_node_name]
+            target_label: node
+          - source_labels: [__meta_kubernetes_pod_ip]
+            regex: (.+)
+            target_label: __address__
+            replacement: $1:9963
+        scrape_interval: 15s
+        scrape_timeout: 10s
+
+      # hubble-relay: порт метрик у Cilium 1.19 — 9966 (не 9965)
+      - job_name: 'hubble-relay'
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names: [kube-system]
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
+            action: keep
+            regex: hubble-relay
+          - source_labels: [__meta_kubernetes_pod_node_name]
+            target_label: node
+          - source_labels: [__meta_kubernetes_pod_ip]
+            regex: (.+)
+            target_label: __address__
+            replacement: $1:9966
+        scrape_interval: 15s
+        scrape_timeout: 10s

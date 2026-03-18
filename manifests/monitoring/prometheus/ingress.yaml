@@ -3,11 +3,9 @@ kind: Ingress
 metadata:
   name: prometheus
   namespace: monitoring
-  annotations:
-    kubernetes.io/ingress.class: traefik
-    traefik.ingress.kubernetes.io/router.entrypoints: web
+  annotations: {}
 spec:
-  ingressClassName: traefik
+  ingressClassName: cilium
   rules:
   - host: prometheus.monitoring.lan
     http:

@@ -21,8 +21,10 @@ spec:
           args:
             - |
               echo "Fixing ownership for UID/GID 10001 (Loki)..."
-              mkdir -p /loki/tsdb-shipper-cache /loki/chunks /loki/rules /loki/compactor
+              # Видалити кеш tsdb-shipper (може містити файли з неправильними правами на OCFS2)
+              rm -rf /loki/tsdb-shipper-cache
               rm -rf /loki/tsdb-shipper-active
+              mkdir -p /loki/tsdb-shipper-cache /loki/chunks /loki/rules /loki/compactor
               mkdir -p /loki/tsdb-shipper-active/scratch
               chown -R 10001:10001 /loki
               chmod -R 775 /loki

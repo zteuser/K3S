@@ -76,7 +76,12 @@ kubectl -n monitoring delete pod -l app=loki
 
 ### Варіант 3: InitContainer у Deployment
 
-У `loki/deployment.yaml` вже є initContainer **fix-loki-permissions** (chown 10001:10001). Якщо він не спрацьовує (наприклад через Pod Security Policy або помилку при chown), використайте Варіант 1 або 2. Після успішного виправлення правами через Job або на ноді под має стабільно стартувати; initContainer далі підтримуватиме права при наступних перезапусках.
+У `loki/deployment.yaml` є initContainer **fix-loki-permissions**, який:
+- видаляє `tsdb-shipper-cache` та `tsdb-shipper-active` (файли з неправильними правами на OCFS2);
+- створює директорії заново;
+- виконує `chown -R 10001:10001 /loki`.
+
+Якщо initContainer не спрацьовує (наприклад через Pod Security Policy), використайте Варіант 1 або 2.
 
 ## Підсумок
 

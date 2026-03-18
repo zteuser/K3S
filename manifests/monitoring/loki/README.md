@@ -38,6 +38,16 @@ kubectl -n monitoring get svc loki
 kubectl -n monitoring logs -l app=loki --tail=20
 ```
 
+## "Error querying loki" / "context canceled" у логах Grafana
+
+Якщо в логах подів Grafana з’являються `level=error`, `msg="Error querying loki"` або `"Error received from Loki"` з причиною **context canceled** — це зазвичай не означає поломку Loki.
+
+**Типові причини:**
+- Користувач закрив панель або перейшов на інший дашборд до завершення запиту (Grafana скасовує контекст).
+- Таймаут запиту: великий діапазон часу або `limit=1000` при повільному Loki призводять до таймауту, після чого контекст скасовується.
+
+**Що зробити:** у datasource Loki (ConfigMap `grafana-datasources`, файл `loki.yaml`) додано `jsonData.timeout: 120` (секунд), щоб важкі запити мали більше часу. Після зміни конфігу: `kubectl apply -f manifests/monitoring/grafana/configmap-datasources.yaml` і `kubectl rollout restart deployment grafana -n monitoring`. Якщо помилки лише при переході між сторінками — їх можна ігнорувати.
+
 ## 502 Bad Gateway / connection refused у Grafana (Cluster Logs, Explore → Loki)
 
 Якщо дашборд **Cluster Logs (Loki)** або **Explore → Loki** показує **502** і в помилці: `dial tcp ...:3100: connect: connection refused` — Grafana не може підключитися до Loki. Зазвичай це означає, що **под Loki не працює** або ще не слухає на порту 3100.

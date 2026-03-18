@@ -16,11 +16,22 @@ spec:
         app: portainer-agent
     spec:
       serviceAccountName: portainer-agent
+      # Без hostNetwork — стабільніший Service/Endpoints; DNS через дозвольні політики (allow-agent-dns-any).
+      # Запускати на тій самій ноді, що й Portainer (master-node)
+      nodeSelector:
+        kubernetes.io/hostname: master-node
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
       containers:
       - name: portainer-agent
         image: portainer/agent:latest
         imagePullPolicy: Always
         env:
+        # Якщо на Portainer Server задано Agent secret, вкажіть той самий тут (або через valueFrom secretKeyRef).
+        # - name: AGENT_SECRET
+        #   value: "your-agent-secret"
         - name: KUBERNETES_POD_NAME
           valueFrom:
             fieldRef:

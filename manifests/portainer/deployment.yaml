@@ -17,7 +17,11 @@ spec:
     spec:
       serviceAccountName: portainer
       dnsPolicy: ClusterFirst
-      # Запускати на master-node: на work-node поди не отримують відповіді DNS від CoreDNS (kube-router реджектить reply у FORWARD). OCFS2 (portainer-data) є на master-node та work-node. Щоб Portainer показував "local" Up — лишати на master-node.
+      tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+      # Запускати на master-node: OCFS2 (portainer-data) є на master-node та work-node. Щоб Portainer показував "local" Up — лишати на master-node.
       nodeSelector:
         kubernetes.io/hostname: master-node
       containers:

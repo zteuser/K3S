@@ -1,0 +1,100 @@
+# Portainer Agent для підключення кластера до Portainer Server (тип "Agent", не Edge).
+# Джерело: https://github.com/portainer/portainer-k8s (agent/portainer-agent.yaml)
+# Застосування: kubectl apply -f manifests/portainer/portainer-agent.yaml
+# Потім у UI: Add environment → Kubernetes → Agent → Environment address: portainer-agent.portainer.svc:9001
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: portainer-sa-clusteradmin
+  namespace: portainer
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: portainer-crb-clusteradmin
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+  - kind: ServiceAccount
+    name: portainer-sa-clusteradmin
+    namespace: portainer
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: portainer-agent
+  namespace: portainer
+spec:
+  type: ClusterIP
+  selector:
+    app: portainer-agent
+  ports:
+    - name: http
+      protocol: TCP
+      port: 9001
+      targetPort: 9001
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: portainer-agent-headless
+  namespace: portainer
+spec:
+  clusterIP: None
+  selector:
+    app: portainer-agent
+---
+# Deployment замість DaemonSet — один репліка достатньо для одного кластера; менше конфліктів з архітектурою нод.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: portainer-agent
+  namespace: portainer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: portainer-agent
+  template:
+    metadata:
+      labels:
+        app: portainer-agent
+    spec:
+      serviceAccountName: portainer-sa-clusteradmin
+      # Запускати на тій самій ноді, що й Portainer Server — уникаємо "no route to host" між нодами (master-node ↔ beelinkeqr5).
+      nodeSelector:
+        kubernetes.io/hostname: master-node
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
+      containers:
+        - name: portainer-agent
+          image: portainer/agent:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: LOG_LEVEL
+              value: "INFO"
+            - name: AGENT_CLUSTER_ADDR
+              value: "portainer-agent-headless.portainer.svc.cluster.local"
+            - name: KUBERNETES_POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: KUBERNETES_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          ports:
+            - containerPort: 9001
+              protocol: TCP
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "128Mi"
+              cpu: "200m"

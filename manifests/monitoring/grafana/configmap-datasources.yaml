@@ -68,6 +68,8 @@ data:
       editable: false
       jsonData:
         timeInterval: "15s"
+  # Loki: якщо в логах Grafana з'являється "Error querying loki" / "context canceled" —
+  # часто це таймаут або закриття запиту при переході на іншу сторінку. Збільшений timeout зменшує помилки при важких запитах.
   loki.yaml: |
     apiVersion: 1
     datasources:
@@ -80,3 +82,4 @@ data:
       editable: true
       jsonData:
         maxLines: 1000
+        timeout: 120

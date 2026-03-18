@@ -54,7 +54,8 @@ kubectl apply -f https://downloads.portainer.io/ce2-33/portainer-agent-k8s-lb.ya
 3. Введіть:
    - **Name**: `k3s-cluster` (або будь-яка назва)
    - **Environment address**: 
-     - **Рекомендовано (Service DNS):** `portainer-agent.portainer.svc.cluster.local:9001`
+     - **Якщо Agent у namespace portainer-agent (ці манифести):** `portainer-agent.portainer-agent.svc.cluster.local:9001`
+     - **Якщо Agent у namespace portainer:** `portainer-agent.portainer.svc.cluster.local:9001`
      - **Або IP адреса ноди:**
        - Для macmini7 (control node): `192.168.2.19:30778`
        - Для master-node: `10.0.10.10:30778`
@@ -72,7 +73,8 @@ kubectl apply -f https://downloads.portainer.io/ce2-33/portainer-agent-k8s-lb.ya
 3. Натисніть на іконку редагування (олівець) або на назву environment
 4. Перейдіть до вкладки "Settings" або "Connection"
 5. Оновіть **Environment address** на правильну адресу:
-   - **Рекомендовано (Service DNS):** `portainer-agent.portainer.svc.cluster.local:9001`
+   - **Якщо Agent у namespace portainer-agent:** `portainer-agent.portainer-agent.svc.cluster.local:9001`
+   - **Якщо Agent у namespace portainer:** `portainer-agent.portainer.svc.cluster.local:9001`
    - **Або IP адреса ноди:**
      - `192.168.2.19:30778` (для macmini7)
      - `10.0.10.10:30778` (для master-node)
@@ -83,10 +85,14 @@ kubectl apply -f https://downloads.portainer.io/ce2-33/portainer-agent-k8s-lb.ya
 
 **Примітка:** NodePort може змінитися після перестворення Service. Перевірте поточний NodePort:
 ```bash
-kubectl get svc portainer-agent -n portainer -o jsonpath='{.spec.ports[0].nodePort}'
+kubectl get svc portainer-agent -n portainer-agent -o jsonpath='{.spec.ports[0].nodePort}'
 ```
 
 ## Troubleshooting
+
+### Timeout (exit 28) або Connection refused при зверненні до Agent
+
+Якщо `curl` до `portainer-agent.portainer-agent.svc.cluster.local:9001/ping` таймаутить або відмовлено в з'єднанні — див. **TROUBLESHOOT-CONNECTIVITY.md**: перевірка pod/endpoints, Cilium network policies та cross-node connectivity (10.244.x.x).
 
 ### "Invalid request signature" (403) в логах Agent
 

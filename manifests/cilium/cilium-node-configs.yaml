@@ -1,0 +1,54 @@
+# CiliumNodeConfig — per-node directRoutingDevice (різні інтерфейси на нодах)
+# Застосувати після встановлення Cilium: kubectl apply -f cilium-node-configs.yaml
+---
+apiVersion: cilium.io/v2
+kind: CiliumNodeConfig
+metadata:
+  name: macmini7-config
+  namespace: kube-system
+spec:
+  nodeSelector:
+    matchLabels:
+      kubernetes.io/hostname: macmini7
+  defaults:
+    devices: "enp3s0f0"
+    direct-routing-device: "enp3s0f0"
+---
+apiVersion: cilium.io/v2
+kind: CiliumNodeConfig
+metadata:
+  name: beelinkeqr5-config
+  namespace: kube-system
+spec:
+  nodeSelector:
+    matchLabels:
+      kubernetes.io/hostname: beelinkeqr5
+  defaults:
+    devices: "enp1s0"
+    direct-routing-device: "enp1s0"
+---
+apiVersion: cilium.io/v2
+kind: CiliumNodeConfig
+metadata:
+  name: master-node-config
+  namespace: kube-system
+spec:
+  nodeSelector:
+    matchLabels:
+      kubernetes.io/hostname: master-node
+  defaults:
+    devices: "enp0s6"
+    direct-routing-device: "enp0s6"
+---
+apiVersion: cilium.io/v2
+kind: CiliumNodeConfig
+metadata:
+  name: work-node-config
+  namespace: kube-system
+spec:
+  nodeSelector:
+    matchLabels:
+      kubernetes.io/hostname: work-node
+  defaults:
+    devices: "enp0s6"
+    direct-routing-device: "enp0s6"

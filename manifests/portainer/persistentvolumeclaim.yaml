@@ -10,6 +10,4 @@ spec:
   resources:
     requests:
       storage: 1Gi
-  selector:
-    matchLabels:
-      storage: sharedata1
+  volumeName: pv-sharedata2

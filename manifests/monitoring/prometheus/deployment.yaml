@@ -18,8 +18,15 @@ spec:
       labels:
         app: prometheus
     spec:
-      dnsPolicy: ClusterFirst
+      # hostNetwork: под використовує мережу хоста → досягає 192.168.1.19 (victron), 192.168.2.x
+      # Без цього pod-мережа Cilium не має маршруту до on-prem → victron-inverter target DOWN
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet  # обов'язково з hostNetwork для cluster DNS
       serviceAccountName: prometheus
+      tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
       # Планувати на ноді, де працює DNS/API (на work-node буває "no route to host" до CoreDNS/API)
       nodeSelector:
         kubernetes.io/hostname: master-node

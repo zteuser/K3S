@@ -1,0 +1,140 @@
+# Політики в namespace portainer: egress до agent, DNS та Kubernetes API.
+# Ingress до agent і egress агента — у manifests/portainer-agent/networkpolicy-allow-from-portainer.yaml
+#
+# 0) Ingress до Portainer UI (порти 9000 HTTP, 9443 HTTPS) — без цього Cilium Ingress не досягає пода: "upstream connect error / connection timeout".
+# host/world — зовнішній клієнт через LB; cluster — трафік від подів у кластері (наприклад Cilium Envoy proxy).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-portainer-ingress-ui
+  namespace: portainer
+spec:
+  endpointSelector:
+    matchLabels:
+      app: portainer
+  ingress:
+    - fromEntities:
+        - host
+        - world
+        - cluster
+      toPorts:
+        - ports:
+            - port: "9000"
+              protocol: TCP
+            - port: "9443"
+              protocol: TCP
+---
+# 0a) Ingress до подів portainer від CoreDNS — без цього DNS-відповіді не доходять, резолв "timed out".
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-portainer-ingress-from-coredns
+  namespace: portainer
+spec:
+  endpointSelector:
+    matchLabels:
+      app: portainer
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+---
+# 0b) Ingress до подів portainer від Agent — зворотний трафік (відповіді на /ping тощо). Без цього — "operation not permitted".
+# fromEntities: host — якщо агент з hostNetwork: true, відповіді йдуть з IP ноди.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-portainer-ingress-from-agent
+  namespace: portainer
+spec:
+  endpointSelector:
+    matchLabels:
+      app: portainer
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: portainer-agent
+            app: portainer-agent
+    - fromEntities:
+        - host
+---
+# 0) Egress до Kubernetes API — без цього Portainer не може snapshot (version/nodes): "dial tcp 10.96.0.1:443: i/o timeout"
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-portainer-egress-kube-apiserver
+  namespace: portainer
+spec:
+  endpointSelector:
+    matchLabels:
+      app: portainer
+  egress:
+    - toEntities:
+        - kube-apiserver
+---
+# 1) Egress з server (portainer) — дозволити вихід до agent у namespace portainer-agent.
+# toEndpoints + toServices + toCIDR(ClusterIP): явний CIDR гарантує доступ до сервісу агента за IP.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-portainer-server-egress-to-agent
+  namespace: portainer
+spec:
+  endpointSelector:
+    matchLabels:
+      app: portainer
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: portainer-agent
+            app: portainer-agent
+      toPorts:
+        - ports:
+            - port: "9001"
+              protocol: TCP
+    - toServices:
+        - k8sService:
+            serviceName: portainer-agent
+            namespace: portainer-agent
+    # Явний egress до ClusterIP агента (замініть на поточний: kubectl get svc -n portainer-agent portainer-agent -o jsonpath='{.spec.clusterIP}')
+    - toCIDR:
+        - 10.104.196.55/32
+      toPorts:
+        - ports:
+            - port: "9001"
+              protocol: TCP
+---
+# 2) Egress з Portainer Server — дозволити DNS (резолв portainer-agent.portainer-agent.svc.cluster.local).
+# toEndpoints + toServices + toCIDR (ClusterIP kube-dns): максимум варіантів для різних версій Cilium.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-portainer-server-egress-dns
+  namespace: portainer
+spec:
+  endpointSelector:
+    matchLabels:
+      app: portainer
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+    - toServices:
+        - k8sService:
+            serviceName: kube-dns
+            namespace: kube-system
+    - toCIDR:
+        - 10.96.0.10/32
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP

@@ -10,6 +10,7 @@ resources:
   - deployment.yaml
   - service.yaml
   - ingress.yaml
+  - networkpolicy-portainer-to-agent.yaml
 
 commonLabels:
   managed-by: kustomize
