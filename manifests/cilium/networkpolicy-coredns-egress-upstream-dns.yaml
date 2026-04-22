@@ -1,6 +1,10 @@
 # Дозволити CoreDNS: upstream DNS + Kubernetes API.
-# Важливо: клієнт у поді з’єднується з https://10.96.0.1:443, але dataplane часто DNAT
-# на реальні endpoints apiserver (вузол:6443). Додано toEntities: kube-apiserver.
+# ClusterIP сервісу kubernetes.default залежить від Service CIDR кластера:
+#   kubeadm (типово): 10.96.0.1   |   k3s (типово): 10.43.0.1
+# Перевірка: kubectl get svc kubernetes -n default -o jsonpath='{.spec.clusterIP}{"\n"}'
+# У toCIDR нижче обидва /32 — приберіть зайвий рядок, якщо не використовується.
+# Клієнт у поді з’єднується з https://<clusterIP>:443; dataplane часто DNAT на apiserver:6443.
+# Додано toEntities: kube-apiserver.
 # Застосувати: kubectl apply -f manifests/cilium/networkpolicy-coredns-egress-upstream-dns.yaml
 ---
 apiVersion: cilium.io/v2
@@ -29,7 +33,8 @@ spec:
             - port: "53"
               protocol: TCP
     - toCIDR:
-        - 10.96.0.1/32
+        - 10.96.0.1/32   # kubeadm default Service CIDR (перший адрес — API)
+        - 10.43.0.1/32   # k3s default Service CIDR (перший адрес — API)
       toPorts:
         - ports:
             - port: "443"

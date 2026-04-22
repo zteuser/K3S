@@ -123,9 +123,16 @@ kubectl logs -n kube-system -l k8s-app=kube-dns --tail=50 -f
 
 ## Крок 6: Cilium NetworkPolicy — egress до API server
 
-Якщо в кластері Cilium з **default-deny** політиками, поди CoreDNS повинні мати явний **egress** до Kubernetes API (ClusterIP), порт 443/TCP. Без цього з’являється `dial tcp 10.96.0.1:443: i/o timeout` (або 10.43.0.1 залежно від Service CIDR).
+Якщо в кластері Cilium з **default-deny** політиками, поди CoreDNS повинні мати явний **egress** до Kubernetes API (ClusterIP сервісу `kubernetes.default`), порт 443/TCP. Без цього в логах з’являється `dial tcp <ClusterIP>:443: i/o timeout`. **Важливо:** ClusterIP API залежить від **Service CIDR** кластера — не плутати kubeadm і k3s:
 
-**Застосувати готову політику** (дозволяє egress до 8.8.8.8/1.1.1.1:53 та до API 10.96.0.1:443):
+| Платформа | Типовий Service CIDR | Типовий ClusterIP `kubernetes.default` |
+|-----------|----------------------|----------------------------------------|
+| kubeadm   | 10.96.0.0/12         | **10.96.0.1**                          |
+| k3s       | 10.43.0.0/16         | **10.43.0.1**                          |
+
+Перевірка в вашому кластері: `kubectl get svc kubernetes -n default -o jsonpath='{.spec.clusterIP}{"\n"}'`
+
+**Застосувати готову політику** [`networkpolicy-coredns-egress-upstream-dns.yaml`](../cilium/networkpolicy-coredns-egress-upstream-dns.yaml): egress до 8.8.8.8/1.1.1.1:53 та до **обох** типових API ClusterIP (10.96.0.1 і 10.43.0.1) на 443/TCP, плюс `toEntities: kube-apiserver`. Якщо ваш API має інший ClusterIP — додайте відповідний `/32` у `toCIDR` у файлі політики.
 
 ```bash
 kubectl apply -f manifests/cilium/networkpolicy-coredns-egress-upstream-dns.yaml
