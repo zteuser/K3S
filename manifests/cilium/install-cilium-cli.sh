@@ -46,7 +46,12 @@ case "$(uname -m)" in
     ;;
 esac
 
-CILIUM_CLI_VERSION=$(curl -sL "https://raw.githubusercontent.com/cilium/cilium-cli/main/stable.txt")
+# stable.txt закінчується newline — прибрати, інакше URL .../download/${VER}/... ламається
+CILIUM_CLI_VERSION="$(curl -fsSL "https://raw.githubusercontent.com/cilium/cilium-cli/main/stable.txt" | tr -d '\r\n')"
+if [[ -z "${CILIUM_CLI_VERSION}" ]]; then
+  echo "Failed to read Cilium CLI version from stable.txt" >&2
+  exit 1
+fi
 echo "Cilium CLI version: ${CILIUM_CLI_VERSION}"
 TARBALL="cilium-${GOOS}-${GOARCH}.tar.gz"
 URL_TAR="${BASE_URL}/download/${CILIUM_CLI_VERSION}/${TARBALL}"
@@ -57,8 +62,13 @@ trap 'rm -rf "$WORKDIR"' EXIT
 cd "$WORKDIR"
 
 echo "Downloading ${TARBALL}..."
-curl -sSLo "$TARBALL" "$URL_TAR"
-curl -sSLo "${TARBALL}.sha256sum" "$URL_SHA"
+# -f: HTTP помилки (404 тощо) → ненульовий exit; -S: показати причину при збої
+curl -fsSLo "$TARBALL" "$URL_TAR"
+curl -fsSLo "${TARBALL}.sha256sum" "$URL_SHA"
+if [[ ! -s "$TARBALL" || ! -s "${TARBALL}.sha256sum" ]]; then
+  echo "Download failed or produced empty files (tarball / checksum)." >&2
+  exit 1
+fi
 
 if command -v sha256sum &>/dev/null; then
   sha256sum --check "${TARBALL}.sha256sum"

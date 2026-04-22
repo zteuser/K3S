@@ -13,10 +13,13 @@ for node in macmini7:192.168.2.19 beelinkeqr5:192.168.1.19 master-node:10.0.10.1
   name="${node%%:*}"
   ip="${node##*:}"
   echo "  $name ($ip)..."
+  # <<'REMOTE' — без локальної підстановки; віддалений bash виконує тіло heredoc.
+  # Каталог k3s задаємо явно (не через $(dirname ...) — однозначно на ноді).
+  # Віддалений bash — окремий процес від локального set рядка 8; код виходу SSH = код віддаленого bash (не «подвійний» set -e).
   if ! ssh -o ConnectTimeout=20 "${SSH_REMOTE_USER}@${ip}" "sudo bash -s" <<'REMOTE'
 set -euo pipefail
 cfg=/etc/rancher/k3s/config.yaml
-sudo install -d "$(dirname "$cfg")"
+sudo install -d /etc/rancher/k3s
 pat='^[[:space:]]*flannel-backend:[[:space:]]*none([[:space:]]|$|#)'
 if sudo test -f "$cfg" && sudo grep -qE "$pat" "$cfg" 2>/dev/null; then
   exit 0
@@ -48,7 +51,13 @@ echo "=== 4. Видаляємо flannel.1 (опційно) ==="
 for node in macmini7:192.168.2.19 beelinkeqr5:192.168.1.19 master-node:10.0.10.10 work-node:10.0.10.20; do
   name="${node%%:*}"
   ip="${node##*:}"
-  ssh -o ConnectTimeout=20 "${SSH_REMOTE_USER}@${ip}" "sudo ip link delete flannel.1 2>/dev/null || true"
+  echo "  $name ($ip)..."
+  # SSH-невдача → вихід; відсутній flannel.1 — не помилка (не маскувати через || true на ssh)
+  if ! ssh -o ConnectTimeout=20 "${SSH_REMOTE_USER}@${ip}" \
+    "if sudo ip link show flannel.1 &>/dev/null; then sudo ip link delete flannel.1; fi"; then
+    echo "Помилка SSH (видалення flannel.1) на $name ($ip)" >&2
+    exit 1
+  fi
 done
 
 echo ""

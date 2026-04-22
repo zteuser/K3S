@@ -39,22 +39,24 @@ def main():
             continue
         kind = item.get("kind", "")
         meta = item.get("metadata")
-        if not isinstance(meta, dict):
-            meta = {}
-            item["metadata"] = meta
-        name = meta.get("name", "")
-        ns = meta.get("namespace", "")
+        if isinstance(meta, dict):
+            name = meta.get("name", "")
+            ns = meta.get("namespace", "")
+        else:
+            name, ns = "", ""
 
         if kind in skip_kinds:
             continue
         if ns == "kube-system" and any(s in name for s in skip_names):
             continue
 
+        if not isinstance(meta, dict):
+            meta = {}
+            item["metadata"] = meta
         # Очистити metadata для apply (завжди той самий dict, що в item)
         for key in ("resourceVersion", "uid", "creationTimestamp", "generation", "selfLink"):
             meta.pop(key, None)
-        if "status" in item:
-            del item["status"]
+        item.pop("status", None)
 
         items.append(item)
 

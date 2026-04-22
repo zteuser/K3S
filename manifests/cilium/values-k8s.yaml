@@ -77,10 +77,9 @@ autoDirectNodeRoutes: true
 # master/work-node: enp0s6, macmini7: enp3s0f0, beelinkeqr5: enp1s0
 # Cilium використовує інтерфейси що існують на ноді
 devices: "enp0s6,enp3s0f0,enp1s0"
-# direct-routing-device — per-node через CiliumNode (macmini7=enp3s0f0)
+# Не задавати direct-routing-device у Helm — enp0s6 лише для OCI; macmini7/beelinkeqr5 — інші (див. cilium-node-configs.yaml).
 # direct-routing-skip-unreachable — macmini7 досяжний через WG (gateway 192.168.100.6), не напряму
 extraConfig:
-  direct-routing-device: "enp0s6"
   direct-routing-skip-unreachable: "true"
 
 l2announcements:

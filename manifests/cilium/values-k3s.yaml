@@ -59,7 +59,7 @@ hubble:
       - flow
       - port-distribution
       - icmp
-      - http
+      # http — лише при l7Proxy: true; інакше без корисних даних / зайве навантаження (див. CILIUM_CONNECTIVITY_ROOT_CAUSE.md)
 
 # IPAM — kubernetes mode використовує cluster CIDR з API (k3s: 10.42.0.0/16)
 ipam:
@@ -72,10 +72,13 @@ ipv4NativeRoutingCIDR: 10.42.0.0/16
 enableIPv4Masquerade: true
 autoDirectNodeRoutes: true
 
-# Мережеві інтерфейси (з backup: macmini7=enp3s0f0, beelinkeqr5=enp1s0, master/work-node=enp0s6)
-# Явно вказати devices та directRoutingDevice — Cilium не завжди визначає автоматично
-devices: "enp0s6"
-directRoutingDevice: "enp0s6"
+# Мережеві інтерфейси: master/work-node=enp0s6, macmini7=enp3s0f0, beelinkeqr5=enp1s0
+# Список усіх — інакше на macmini7/beelinkeqr5 «unable to determine direct routing device» (див. MACMINI7_JOIN_VERIFY.md).
+# Не задавати direct-routing-device тут — enp0s6 лише для OCI; на macmini7/beelinkeqr5 треба enp3s0f0 / enp1s0.
+# Явний per-node direct-routing-device: kubectl apply -f manifests/cilium/cilium-node-configs.yaml (одразу після helm install).
+devices: "enp0s6,enp3s0f0,enp1s0"
+extraConfig:
+  direct-routing-skip-unreachable: "true"
 
 # L2 Announcements — для LB-IPAM (опційно, після базової міграції)
 l2announcements:
@@ -105,12 +108,13 @@ hostFirewall:
 socketLB:
   enabled: true
 
-# Gateway API (опційно, для майбутньої міграції з Traefik)
+# l7Proxy: false — уникнути TPROXY / втрати host connectivity (CILIUM_CONNECTIVITY_ROOT_CAUSE.md, cilium#25015).
+# gatewayAPI потребує l7Proxy — лишаємо вимкненим (узгоджено з values-k8s.yaml).
 gatewayAPI:
-  enabled: true
+  enabled: false
   hostNetwork:
     enabled: false
-l7Proxy: true
+l7Proxy: false
 
 # BPF
 bpf:
