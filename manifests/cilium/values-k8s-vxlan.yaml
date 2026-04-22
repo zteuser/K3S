@@ -1,9 +1,14 @@
 # Override: VXLAN замість native routing
 # Pod-трафік інкапсульований — використовує node IP (10.0.10.x), обходить OCI Security List
 # Використання: helm upgrade cilium -f values-k8s.yaml -f values-k8s-vxlan.yaml
+# Node Port "hybrid" mode несумісний з VXLAN — вмикаємо snat.
 
 tunnelProtocol: "vxlan"
 routingMode: tunnel
 autoDirectNodeRoutes: false
-# Для VXLAN direct-routing-device не потрібен — видалити з extraConfig
-extraConfig: {}
+loadBalancer:
+  mode: snat
+# Для VXLAN direct-routing не використовується — вимикаємо skip-unreachable,
+# інакше agent падає: "direct-routing-skip-unreachable cannot be enabled when auto-direct-node-routes is not enabled"
+extraConfig:
+  "direct-routing-skip-unreachable": "false"

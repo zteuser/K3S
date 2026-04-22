@@ -1,0 +1,36 @@
+# Дозволити CoreDNS: upstream DNS + Kubernetes API.
+# Важливо: клієнт у поді з’єднується з https://10.96.0.1:443, але dataplane часто DNAT
+# на реальні endpoints apiserver (вузол:6443). Додано toEntities: kube-apiserver.
+# Застосувати: kubectl apply -f manifests/cilium/networkpolicy-coredns-egress-upstream-dns.yaml
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-coredns-egress-upstream-dns
+  namespace: kube-system
+spec:
+  endpointSelector:
+    matchLabels:
+      k8s-app: kube-dns
+  egress:
+    - toEntities:
+        - kube-apiserver
+      toPorts:
+        - ports:
+            - port: "6443"
+              protocol: TCP
+    - toCIDR:
+        - 8.8.8.8/32
+        - 1.1.1.1/32
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+    - toCIDR:
+        - 10.96.0.1/32
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP

@@ -61,3 +61,7 @@ kubectl logs -n kube-system -l k8s-app=kube-dns --tail=20
 
 - Після оновлення k3s вбудований манифест CoreDNS може перезаписати ConfigMap — патч зникне. Застосуйте його знову.
 - Якщо подам потрібно резолвити внутрішні OCI hostnames в зоні `oraclevcn.com`, 8.8.8.8 їх не знайде (NXDOMAIN). Для типового Kubernetes workload це прийнятно.
+
+## Пов’язано
+
+Якщо в логах з’являються **штучно довгі** імена з суфіксом `*.oraclevcn.com` (наприклад `*.rancher.io.vcn….oraclevcn.com`) — див. **FIX_OCI_SEARCH_SUFFIX_MALFORMED_FQDN.md** (`ndots`, прибрати VCN з `search` у подів через `--resolv-conf`).

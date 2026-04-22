@@ -37,7 +37,7 @@ spec:
   ingress:
     - fromEndpoints:
         - matchLabels:
-            k8s:io.kubernetes.pod.namespace: kube-system
+            "k8s:io.kubernetes.pod.namespace": kube-system
             k8s-app: kube-dns
 ---
 # 0b) Ingress до подів portainer від Agent — зворотний трафік (відповіді на /ping тощо). Без цього — "operation not permitted".
@@ -54,7 +54,7 @@ spec:
   ingress:
     - fromEndpoints:
         - matchLabels:
-            k8s:io.kubernetes.pod.namespace: portainer-agent
+            "k8s:io.kubernetes.pod.namespace": portainer-agent
             app: portainer-agent
     - fromEntities:
         - host
@@ -87,7 +87,7 @@ spec:
   egress:
     - toEndpoints:
         - matchLabels:
-            k8s:io.kubernetes.pod.namespace: portainer-agent
+            "k8s:io.kubernetes.pod.namespace": portainer-agent
             app: portainer-agent
       toPorts:
         - ports:
@@ -119,7 +119,7 @@ spec:
   egress:
     - toEndpoints:
         - matchLabels:
-            k8s:io.kubernetes.pod.namespace: kube-system
+            "k8s:io.kubernetes.pod.namespace": kube-system
       toPorts:
         - ports:
             - port: "53"

@@ -87,6 +87,10 @@ spec:
           mountPath: /etc/grafana/provisioning/dashboards-json
         - name: grafana-dashboards-snmp
           mountPath: /etc/grafana/provisioning/dashboards-snmp
+        # Ім'я volume не grafana-dashboards-cilium: інакше kubectl apply (strategic merge)
+        # лишає старий configMap volume замість projected — у поді тільки .keep
+        - name: grafana-cilium-projected
+          mountPath: /etc/grafana/provisioning/dashboards-cilium
         - name: grafana-storage
           mountPath: /var/lib/grafana
         securityContext:
@@ -135,6 +139,25 @@ spec:
       - name: grafana-dashboards-snmp
         configMap:
           name: grafana-dashboards-snmp
+      # Базовий CM (.keep) + опційні CM з scripts/download-cilium-dashboards.sh (Grafana.com IDs)
+      - name: grafana-cilium-projected
+        projected:
+          defaultMode: 0644
+          sources:
+            - configMap:
+                name: grafana-dashboards-cilium
+            - configMap:
+                name: grafana-dashboards-cilium-21431
+                optional: true
+            - configMap:
+                name: grafana-dashboards-cilium-14501
+                optional: true
+            - configMap:
+                name: grafana-dashboards-cilium-16613
+                optional: true
+            - configMap:
+                name: grafana-dashboards-cilium-24056
+                optional: true
       - name: grafana-storage
         persistentVolumeClaim:
           claimName: grafana-data

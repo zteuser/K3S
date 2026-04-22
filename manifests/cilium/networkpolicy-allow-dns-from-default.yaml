@@ -1,4 +1,7 @@
 # Дозволити подам у default (наприклад test-dns) робити DNS-запити до CoreDNS.
+# Namespace у fromEndpoints/toEndpoints: ключ має бути в лапках — інакше YAML може
+# інтерпретувати «k8s:» як окремий ключ. Формат k8s:io.kubernetes.pod.namespace — офіційний для Cilium
+# (див. docs.cilium.io stable/security/policy/kubernetes).
 # Застосувати: kubectl apply -f manifests/cilium/networkpolicy-allow-dns-from-default.yaml
 ---
 apiVersion: cilium.io/v2
@@ -13,7 +16,7 @@ spec:
   ingress:
     - fromEndpoints:
         - matchLabels:
-            k8s:io.kubernetes.pod.namespace: default
+            "k8s:io.kubernetes.pod.namespace": default
       toPorts:
         - ports:
             - port: "53"
@@ -33,4 +36,4 @@ spec:
   egress:
     - toEndpoints:
         - matchLabels:
-            k8s:io.kubernetes.pod.namespace: default
+            "k8s:io.kubernetes.pod.namespace": default

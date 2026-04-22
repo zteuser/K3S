@@ -1,8 +1,22 @@
 .cursor/
 *.local
 
+# Cilium CLI (download via manifests/cilium/install-cilium-cli.sh; >100MB, GitHub rejects)
+bin/cilium
+
+# macOS / Finder
+.DS_Store
+**/.DS_Store
+*.DS_Store
+
+# Python bytecode / caches (never commit)
+__pycache__/
+*.py[cod]
+*$py.class
+
 # Python venv для генерації діаграм
 manifests/cilium/.venv/
+backup-pre-cilium/.venv/
 
 # Grafana pod/container logs (exported from Portainer/kubectl)
 grafana*log
@@ -11,3 +25,7 @@ grafana*_logs*
 # Бекап перед міграцією (може містити secrets)
 backup-pre-cilium/*.yaml
 backup-pre-cilium/node-*.txt
+
+# Prisma Cloud credential exports (CSV from UI/API)
+Access Key_*.csv
+*Access Key*.csv

@@ -40,7 +40,7 @@ kubectl get ingress -n portainer
 ```
 
 Якщо под у стані `Pending` — перевірте PVC і PV (`kubectl get pvc -n portainer`, `kubectl describe pvc portainer-data -n portainer`).  
-Доступ: **http://portainer.lan/** (якщо Cilium Ingress на порту 80) або **http://\<node-IP\>:30900** (NodePort).
+Доступ: **http://portainer.lan:9000/** (LoadBalancer portainer-lb слухає на 9000; не використовуйте порт 80 — буде ERR_CONNECTION_REFUSED). Альтернатива: **http://\<node-IP\>:30900** (NodePort).
 
 **Якщо в браузері:** `upstream connect error or disconnect/reset before headers. reset reason: connection timeout` — Cilium Ingress не може досягти пода Portainer через default-deny. У `networkpolicy-portainer-to-agent.yaml` додано політику **allow-portainer-ingress-ui** (ingress на порти 9000, 9443 від host/world/cluster). Застосуйте: `kubectl apply -f manifests/portainer/networkpolicy-portainer-to-agent.yaml`.
 

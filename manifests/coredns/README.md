@@ -4,6 +4,18 @@
 
 Якщо в логах з’являються `[ERROR] plugin/errors: ... i/o timeout` при запитах до `169.254.169.254:53` (OCI VCN resolver), див. **FIX_OCI_DNS_TIMEOUT.md** та скрипт `apply-coredns-oci-dns-fix.sh`.
 
+### Помилкові FQDN з суфіксом `*.oraclevcn.com` (rancher.io → rancher.io.vcn….oraclevcn.com)
+
+Якщо в логах CoreDNS з’являються неіснуючі імена на кшталт `longhorn-upgrade-responder.rancher.io.vcn09070439.oraclevcn.com` і таймаути до 1.1.1.1 / 8.8.8.8 — це **search-домен OCI + ndots**, а не «зламаний» публічний DNS. Див. **FIX_OCI_SEARCH_SUFFIX_MALFORMED_FQDN.md** (для **kubeadm**: `resolvConf` у `/var/lib/kubelet/config.yaml` + `/etc/kubernetes/kubelet-resolv.conf`; для **k3s**: `--resolv-conf`). Перевірка **усіх нод** (скрипт у репо **K8S**): `~/WORK/K8S/scripts/check-resolv-oraclevcn-all-nodes.sh` — див. `K8S/docs/DNS_OCI_KUBELET_RESOLV.md`.
+
+### DNS i/o timeout до 8.8.8.8 / 1.1.1.1 (resolve в internet)
+
+Щоб CoreDNS міг робити resolve зовнішніх імен (наприклад stats.grafana.org), потрібен **egress** з VCN до публічних DNS і маршрут до інтернету. Див. **../OCI_SECURITY_LIST_MANUAL_STEPS.md** — розділ «Egress: CoreDNS — resolve в internet» (Egress Rules: UDP 53 до 8.8.8.8/32 та 1.1.1.1/32; Route Table: 0.0.0.0/0 → IGW або NAT).
+
+У кластері з Cilium і default-deny політиками потрібна **CiliumNetworkPolicy**, що дозволяє CoreDNS egress до 8.8.8.8 та 1.1.1.1 на порт 53: див. **../cilium/networkpolicy-coredns-egress-upstream-dns.yaml** (`kubectl apply -f`).
+
+Якщо поди на інших нодах (наприклад work-node) не можуть достукатися до кластерного DNS (10.96.0.10), перевірте **internalTrafficPolicy** сервісу kube-dns. При **Local** трафік йде лише на endpoint на тій же ноді; якщо Ready под CoreDNS лише на одній ноді, з інших буде "Operation not permitted". Виправлення: `kubectl patch svc kube-dns -n kube-system -p '{"spec":{"internalTrafficPolicy":"Cluster"}}'`.
+
 ---
 
 ## Помилки «Failed to watch» / «watch ended with error»

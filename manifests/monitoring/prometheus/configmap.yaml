@@ -199,6 +199,34 @@ data:
             regex: (.+)
             target_label: __address__
             replacement: $1:9962
+          # Grafana.com dashboard 21431: PromQL з k8s_app="cilium" (на /metrics цього лейбла зазвичай немає)
+          - target_label: k8s_app
+            replacement: cilium
+        scrape_interval: 15s
+        scrape_timeout: 10s
+
+      # Hubble flow/dns/http метрики (Grafana 16613): на cilium-agent :9965, НЕ на hubble-relay :9966
+      - job_name: 'hubble-metrics'
+        honor_labels: true
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names: [kube-system]
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_label_k8s_app]
+            action: keep
+            regex: cilium
+          - source_labels: [__meta_kubernetes_pod_container_name]
+            action: keep
+            regex: cilium-agent
+          - source_labels: [__meta_kubernetes_pod_node_name]
+            target_label: node
+          - source_labels: [__meta_kubernetes_pod_name]
+            target_label: pod
+          - source_labels: [__meta_kubernetes_pod_ip]
+            regex: (.+)
+            target_label: __address__
+            replacement: $1:9965
         scrape_interval: 15s
         scrape_timeout: 10s
 
@@ -217,11 +245,17 @@ data:
             regex: (.+)
             target_label: __address__
             replacement: $1:9963
+          - source_labels: [__meta_kubernetes_pod_name]
+            target_label: pod
+          # Dashboard 14501: io_cilium_app="operator"
+          - target_label: io_cilium_app
+            replacement: operator
         scrape_interval: 15s
         scrape_timeout: 10s
 
       # hubble-relay: порт метрик у Cilium 1.19 — 9966 (не 9965)
       - job_name: 'hubble-relay'
+        honor_labels: true
         kubernetes_sd_configs:
           - role: pod
             namespaces:

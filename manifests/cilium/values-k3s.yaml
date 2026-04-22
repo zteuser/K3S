@@ -35,7 +35,7 @@ hubble:
     nodeSelector:
       kubernetes.io/hostname: work-node
     prometheus:
-      enabled: true   # Метрики для дашборду Hubble (порт 9965)
+      enabled: true   # /metrics на relay, порт 9966 (1.19+); також потрібен hubble.metrics.enabled (нижче)
     dialTimeout: "5s"
     retryTimeout: "10s"
     tls:
@@ -49,6 +49,7 @@ hubble:
       server:
         ipv6:
           enabled: false
+  # Без flow/dns/... Grafana Hubble (16613) порожній: helm default hubble.metrics.enabled ~ = вимкнено
   metrics:
     enableOpenMetrics: true
     enabled:

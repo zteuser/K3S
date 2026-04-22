@@ -1,5 +1,6 @@
 # Дозволити подам у kube-system (зокрема hubble-relay) робити DNS-запити до CoreDNS.
 # Без цієї політики Cilium дропає трафік до CoreDNS від усіх, окрім portainer/portainer-agent.
+# Ключ namespace у matchLabels — у лапках (див. networkpolicy-allow-dns-from-default.yaml).
 # Застосувати: kubectl apply -f manifests/cilium/networkpolicy-allow-dns-from-kube-system.yaml
 ---
 apiVersion: cilium.io/v2
@@ -14,7 +15,7 @@ spec:
   ingress:
     - fromEndpoints:
         - matchLabels:
-            k8s:io.kubernetes.pod.namespace: kube-system
+            "k8s:io.kubernetes.pod.namespace": kube-system
       toPorts:
         - ports:
             - port: "53"
@@ -34,4 +35,4 @@ spec:
   egress:
     - toEndpoints:
         - matchLabels:
-            k8s:io.kubernetes.pod.namespace: kube-system
+            "k8s:io.kubernetes.pod.namespace": kube-system

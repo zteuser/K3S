@@ -31,6 +31,9 @@ hubble:
     targetPort: 4244
   relay:
     enabled: true
+    # Prometheus /metrics на порту 9966 — без цього target hubble-relay буде DOWN (connection refused)
+    prometheus:
+      enabled: true
     # Workaround: schedule on work-node so DNS (CoreDNS on work-node) is reachable;
     # on master-node pod->CoreDNS hits cross-node 10.244.0.x -> 10.244.1.x and can timeout (e.g. OCI Security List).
     nodeSelector:
@@ -48,6 +51,7 @@ hubble:
       server:
         ipv6:
           enabled: false
+  # Без flow/dns/... Grafana Hubble (16613) порожній: helm default hubble.metrics.enabled ~ = вимкнено
   metrics:
     enableOpenMetrics: true
     enabled:

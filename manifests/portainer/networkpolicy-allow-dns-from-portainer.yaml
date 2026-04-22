@@ -18,7 +18,7 @@ spec:
   ingress:
     - fromEndpoints:
         - matchLabels:
-            k8s:io.kubernetes.pod.namespace: portainer
+            "k8s:io.kubernetes.pod.namespace": portainer
       toPorts:
         - ports:
             - port: "53"
@@ -39,4 +39,4 @@ spec:
   egress:
     - toEndpoints:
         - matchLabels:
-            k8s:io.kubernetes.pod.namespace: portainer
+            "k8s:io.kubernetes.pod.namespace": portainer

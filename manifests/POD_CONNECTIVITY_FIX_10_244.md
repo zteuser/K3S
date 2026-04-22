@@ -105,10 +105,46 @@ cat /etc/rancher/k3s/config.yaml
 
 ---
 
-## 5. Чеклист
+## 5. Чеклист (базовий)
 
 - [ ] OCI Security List: додано 10.244.0.0/16 (варіант A) **або**
 - [ ] Cilium переведено на VXLAN (варіант B)
 - [ ] ipv4NativeRoutingCIDR відповідає cluster-cidr (варіант C)
 - [ ] k3s встановлено з `--disable-kube-proxy`
 - [ ] `kubectl run test-dns ... nslookup kube-dns` — успішно
+
+---
+
+## 6. Важливо: перевірка на **всіх** нодах кластера
+
+Цей документ і команди вище стосуються переважно пари **master-node ↔ work-node** (OCI). Якщо в кластері є інші ноди (**beelinkeqr5**, **macmini7** тощо), після VXLAN або Security List потрібна **повна перевірка** — інакше поди на цих нодах можуть не досягати API server або подів на інших нодах (наприклад CoreDNS дасть `dial tcp 10.96.0.1:443: i/o timeout`).
+
+**Остаточний чеклист** (Cilium + CoreDNS для всіх нод): див. **[CILIUM_COREDNS_FINAL_VERIFICATION.md](CILIUM_COREDNS_FINAL_VERIFICATION.md)** — нумеровані кроки перевірки з точними командами. **Встановлення Cilium CLI** (для `cilium status` та `cilium connectivity test`): **[cilium/install-cilium-cli.sh](cilium/install-cilium-cli.sh)**.
+
+**Що перевірити з поду на кожній ноді:**
+
+1. **Доступ до Kubernetes API** (потрібен для CoreDNS watch):
+   ```bash
+   for NODE in master-node work-node beelinkeqr5 macmini7; do
+     echo "=== $NODE ==="
+     kubectl run curl-api-$NODE --rm -i --restart=Never --overrides="{\"spec\":{\"nodeName\":\"$NODE\"}}" --image=curlimages/curl -- \
+       curl -k -s -o /dev/null -w "%{http_code}" --connect-timeout 5 https://10.96.0.1:443/version 2>/dev/null || echo "timeout/fail"
+   done
+   ```
+   Очікується: HTTP код (наприклад 403), не таймаут.
+
+2. **Pod-to-pod** (наприклад DNS) — под на конкретній ноді:
+   ```bash
+   kubectl run test-dns-beelinkeqr5 --image=busybox:1.36 --restart=Never --overrides='{"spec":{"nodeName":"beelinkeqr5"}}' -- nslookup kube-dns.kube-system.svc.cluster.local
+   kubectl logs test-dns-beelinkeqr5
+   kubectl delete pod test-dns-beelinkeqr5
+   ```
+   Аналогічно для інших нод — замінити `nodeName` на `master-node`, `work-node`, `macmini7`.
+
+3. **Cilium connectivity test** (якщо встановлено cilium CLI):
+   ```bash
+   cilium connectivity test
+   ```
+   Переконайтеся, що тест проходить між усіма парами нод, а не лише OCI.
+
+Якщо з поду на **beelinkeqr5** (або macmini7) до 10.96.0.1 таймаут — VXLAN-трафік між цією нодою та нодою з API server (наприклад master-node) не проходить: firewall між мережами (Syhiv17/VRN625 ↔ OCI) має дозволяти **VXLAN UDP 4789** між node IP, або потрібно перевірити маршрути/WireGuard тощо.

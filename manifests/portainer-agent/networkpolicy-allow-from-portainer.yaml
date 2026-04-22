@@ -15,7 +15,7 @@ spec:
   ingress:
     - fromEndpoints:
         - matchLabels:
-            k8s:io.kubernetes.pod.namespace: portainer
+            "k8s:io.kubernetes.pod.namespace": portainer
             app: portainer
       toPorts:
         - ports:
@@ -31,7 +31,7 @@ spec:
     # DNS-відповіді від CoreDNS (агент робить lookup s-portainer-agent-headless) — без toPorts, щоб приймати на ефемерний порт.
     - fromEndpoints:
         - matchLabels:
-            k8s:io.kubernetes.pod.namespace: kube-system
+            "k8s:io.kubernetes.pod.namespace": kube-system
             k8s-app: kube-dns
     # Відповіді DNS з pod CIDR (CoreDNS відповідає з pod IP, не ClusterIP) — надійніше при i/o timeout.
     - fromCIDR:
@@ -49,7 +49,7 @@ spec:
   egress:
     - toEndpoints:
         - matchLabels:
-            k8s:io.kubernetes.pod.namespace: kube-system
+            "k8s:io.kubernetes.pod.namespace": kube-system
       toPorts:
         - ports:
             - port: "53"
@@ -79,5 +79,5 @@ spec:
   egress:
     - toEndpoints:
         - matchLabels:
-            k8s:io.kubernetes.pod.namespace: portainer
+            "k8s:io.kubernetes.pod.namespace": portainer
             app: portainer

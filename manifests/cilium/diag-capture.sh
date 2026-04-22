@@ -10,8 +10,8 @@ mkdir -p "$OUT"
 
 echo "=== Cilium connectivity diag: $DIR @ $(date -Iseconds) ==="
 
-# iptables (legacy or nft)
-( iptables-save 2>/dev/null || iptables-legacy-save 2>/dev/null ) > "$OUT/iptables.txt"
+# iptables (legacy or nft) — обидва save можуть бути недоступні (контейнер, nft-only)
+( iptables-save 2>/dev/null || iptables-legacy-save 2>/dev/null ) > "$OUT/iptables.txt" 2>/dev/null || true
 ( iptables-save -t nat 2>/dev/null || iptables-legacy-save -t nat 2>/dev/null ) > "$OUT/iptables-nat.txt" 2>/dev/null || true
 
 # routing

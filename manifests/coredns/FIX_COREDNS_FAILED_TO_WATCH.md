@@ -121,13 +121,20 @@ kubectl logs -n kube-system -l k8s-app=kube-dns --tail=50 -f
 
 ---
 
-## Крок 6: Якщо є NetworkPolicy
+## Крок 6: Cilium NetworkPolicy — egress до API server
 
-Якщо в `kube-system` увімкнені NetworkPolicy, переконайтесь, що поди з лейблом `k8s-app=kube-dns` мають **egress** до:
+Якщо в кластері Cilium з **default-deny** політиками, поди CoreDNS повинні мати явний **egress** до Kubernetes API (ClusterIP), порт 443/TCP. Без цього з’являється `dial tcp 10.96.0.1:443: i/o timeout` (або 10.43.0.1 залежно від Service CIDR).
 
-- Kubernetes API: `10.43.0.1` (або Service DNS `kubernetes.default.svc.cluster.local`), порт 443 (HTTPS).
+**Застосувати готову політику** (дозволяє egress до 8.8.8.8/1.1.1.1:53 та до API 10.96.0.1:443):
 
-Без цього watch до API може обриватися.
+```bash
+kubectl apply -f manifests/cilium/networkpolicy-coredns-egress-upstream-dns.yaml
+```
+
+Якщо після цього поди CoreDNS на **окремих нодах** (наприклад beelinkeqr5, macmini7) лишаються 0/1 Ready і в логах той самий timeout — причина вже не політика, а **маршрутизація/зв’язність**: з pod network цієї ноди немає шляху до ноди, де слухає API server (наприклад master-node в іншій мережі). Тоді варіанти:
+
+1. **Node affinity** — запускати CoreDNS лише на нодах з гарантованим доступом до API (наприклад master-node): див. Крок 3 та `apply-coredns-node-affinity.sh`.
+2. Перевірити міжнодову зв’язність (Cilium `cilium connectivity test`, firewall між Syhiv17/VRN625/OCI).
 
 ---
 
