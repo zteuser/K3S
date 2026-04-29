@@ -18,7 +18,8 @@ spec:
       # fsGroup: 0 щоб emptyDir для /var/lib/alloy/data був записуваний (Alloy інакше падає з "mkdir: permission denied")
       securityContext:
         fsGroup: 0
-      hostNetwork: false
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
       hostPID: false
       tolerations:
         - key: node-role.kubernetes.io/control-plane
@@ -41,8 +42,11 @@ spec:
             - --storage.path=/var/lib/alloy/data
             - /etc/alloy/config.alloy
           ports:
+            # hostPort — скрейп Alloy з Prometheus (hostNetwork на master) через node IP:12345
             - containerPort: 12345
+              hostPort: 12345
               name: http
+              protocol: TCP
           volumeMounts:
             - name: config
               mountPath: /etc/alloy
