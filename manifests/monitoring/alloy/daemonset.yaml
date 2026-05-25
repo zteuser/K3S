@@ -61,13 +61,15 @@ spec:
               readOnly: true
             - name: storage
               mountPath: /var/lib/alloy
+          # На busy-нодах (OCI work-node) низький CPU limit призводить до throttling і «зависання»
+          # /metrics для Prometheus (wget >120s). Збільшено для стабільного scrape.
           resources:
             requests:
-              memory: "64Mi"
-              cpu: "50m"
-            limits:
               memory: "128Mi"
-              cpu: "200m"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "1000m"
           securityContext:
             runAsUser: 0
             runAsGroup: 0
